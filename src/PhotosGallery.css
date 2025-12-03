@@ -1,0 +1,665 @@
+.photos-gallery-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.gallery-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-heart-gallery {
+  position: absolute;
+  opacity: 0.6;
+  animation: floatAround 8s infinite ease-in-out;
+}
+
+@keyframes floatAround {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.gallery-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-btn-gallery {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  margin-bottom: 30px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  transition: all 0.3s ease;
+}
+
+.back-btn-gallery:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.gallery-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.gallery-header h1 {
+  font-size: 3em;
+  color: white;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gallery-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2em;
+  font-style: italic;
+}
+
+/* Adventures Grid */
+.adventures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.adventure-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.adventure-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.adventure-preview {
+  position: relative;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+.preview-photos {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-photo {
+  position: absolute;
+  width: 80px;
+  height: 60px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.preview-photo:nth-child(1) { left: 20px; top: 10px; }
+.preview-photo:nth-child(2) { left: 80px; top: 0px; }
+.preview-photo:nth-child(3) { left: 140px; top: 10px; }
+.preview-photo:nth-child(4) { left: 200px; top: 0px; }
+
+.adventure-card:hover .preview-photo:nth-child(1) {
+  transform: rotate(-5deg) translateY(-5px);
+}
+
+.adventure-card:hover .preview-photo:nth-child(2) {
+  transform: rotate(3deg) translateY(-8px);
+}
+
+.adventure-card:hover .preview-photo:nth-child(3) {
+  transform: rotate(-2deg) translateY(-5px);
+}
+
+.adventure-card:hover .preview-photo:nth-child(4) {
+  transform: rotate(4deg) translateY(-8px);
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.preview-placeholder {
+  font-size: 1.5em;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-count {
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.adventure-info h3 {
+  color: #333;
+  font-size: 1.4em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.adventure-info p {
+  color: #666;
+  text-align: center;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.adventure-stats {
+  text-align: center;
+}
+
+.stat {
+  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.adventure-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.2em;
+  color: white;
+}
+
+.adventure-card:hover .adventure-overlay {
+  opacity: 1;
+}
+
+.gallery-message {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.message-card h3 {
+  color: #ff6b6b;
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.message-card p {
+  line-height: 1.8;
+  font-size: 1.1em;
+  text-align: center;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.message-signature {
+  text-align: right;
+  font-style: italic;
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.message-signature span {
+  font-size: 1.1em;
+}
+
+/* Adventure Modal */
+.adventure-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: modalAppear 0.3s ease;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.5em;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-modal:hover {
+  background: #ff5252;
+  transform: scale(1.1);
+}
+
+.modal-header {
+  padding: 30px 30px 20px;
+  text-align: center;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modal-header h2 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 2em;
+}
+
+.modal-description {
+  color: #666;
+  font-size: 1.1em;
+  margin-bottom: 15px;
+}
+
+.photo-counter {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* Photo Viewer */
+.photo-viewer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  position: relative;
+  min-height: 400px;
+}
+
+.current-photo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.current-photo {
+  width: 300px;
+  height: 300px;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-photo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.image-placeholder-main {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.placeholder-emoji-large {
+  font-size: 4em;
+  margin-bottom: 20px;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.photo-caption {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  text-align: center;
+  max-width: 80%;
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin: 0 20px;
+}
+
+.nav-btn:hover {
+  background: white;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Photo Thumbnails */
+.photo-thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 30px;
+  flex-wrap: wrap;
+  border-top: 2px solid #f0f0f0;
+}
+
+.thumbnail {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.thumbnail:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.thumbnail.active {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px #ff6b6b, 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.thumbnail-emoji {
+  font-size: 1.2em;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.modal-message {
+  background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 1.1em;
+  border-radius: 0 0 20px 20px;
+}
+
+/* Loading States */
+.preview-photo:not(:has(img[src])) .preview-placeholder,
+.current-photo:not(:has(.main-photo-image[src])) .image-placeholder-main,
+.thumbnail:not(:has(.thumbnail-image[src])) .thumbnail-placeholder {
+  display: flex;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .gallery-header h1 {
+    font-size: 2.2em;
+  }
+  
+  .adventures-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .adventure-card {
+    padding: 20px;
+  }
+  
+  .adventure-preview {
+    height: 100px;
+  }
+  
+  .preview-photo {
+    width: 60px;
+    height: 45px;
+  }
+  
+  .preview-photo:nth-child(1) { left: 10px; top: 15px; }
+  .preview-photo:nth-child(2) { left: 60px; top: 5px; }
+  .preview-photo:nth-child(3) { left: 110px; top: 15px; }
+  .preview-photo:nth-child(4) { left: 160px; top: 5px; }
+  
+  .modal-content {
+    width: 98%;
+    max-height: 95vh;
+  }
+  
+  .photo-viewer {
+    padding: 20px;
+    min-height: 300px;
+  }
+  
+  .current-photo {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .placeholder-emoji-large {
+    font-size: 3em;
+  }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5em;
+    margin: 0 10px;
+  }
+  
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .photo-thumbnails {
+    gap: 8px;
+    padding: 15px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-photo:nth-child(1) { left: 5px; top: 20px; }
+  .preview-photo:nth-child(2) { left: 50px; top: 10px; }
+  .preview-photo:nth-child(3) { left: 95px; top: 20px; }
+  .preview-photo:nth-child(4) { left: 140px; top: 10px; }
+  
+  .current-photo {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .placeholder-emoji-large {
+    font-size: 2.5em;
+  }
+  
+  .photo-caption {
+    font-size: 0.9em;
+    padding: 8px 15px;
+  }
+  
+  .thumbnail {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Smooth transitions for image loading */
+.preview-image,
+.main-photo-image,
+.thumbnail-image {
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure proper z-index for overlays */
+.adventure-overlay,
+.photo-caption {
+  z-index: 5;
+}
+
+/* Focus states for accessibility */
+.back-btn-gallery:focus,
+.nav-btn:focus,
+.close-modal:focus,
+.thumbnail:focus {
+  outline: 2px solid #ff6b6b;
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling for modal */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 20px 20px 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #ff6b6b;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #ff5252;
+}
