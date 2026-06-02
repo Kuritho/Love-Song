@@ -2,24 +2,149 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import LoveSong from './LoveSong';
 import PhotosGallery from './PhotosGallery';
-import VideosGallery from './VideosGallery'; // We'll create this component
+import VideosGallery from './VideosGallery';
+import FlappyLoveBird from './FlappyLoveBird';
+import Sudoku from './Sudoku';
 
 function App() {
   const [currentView, setCurrentView] = useState('main');
   const [showHearts, setShowHearts] = useState(false);
-  const [girlfriendName] = useState('Kurt Bryy');
-  const [yourName] = useState('[Your Name]');
+  const [selectedMonth, setSelectedMonth] = useState(7);
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState(null);
+  const [showGame, setShowGame] = useState(false);
+  const [showSudoku, setShowSudoku] = useState(false);
+
+  const monthContent = {
+    1: {
+      title: "1st Monthsary",
+      subtitle: "The Beginning of Forever",
+      emoji: "🌅",
+      letter: {
+        greeting: "My Dearest Jasmine 💕",
+        paragraphs: [
+          "Since that moment I first saw you on Tinder, I never expected nga ikaw diay ang babae who would change everything for me. Sa imong cute nga smile sa picture, I didn't know you would become the person I'd think about every day.",
+          "When we moved to Instagram on October 13, every story you shared… even the ones that hurt… I listened because I wanted to understand you, not to judge you. Sometimes it cut me deep, pero kabalo ka? I still chose to stay. I stayed because somehow, even with the pain, my heart kept telling me, 'She's worth it.'",
+          "Sa mga remaining days sa October, katong nag–love ta without label, I didn't expect nga mo-grow diay ni into something real. You became my peace and my chaos at the same time, but I still wanted more of you every day."
+        ],
+        specialNote: "✨ This is just the beginning of our beautiful journey together. ✨"
+      }
+    },
+    2: {
+      title: "2nd Monthsary",
+      subtitle: "Growing Deeper",
+      emoji: "🌱",
+      letter: {
+        greeting: "My Love Jasmine 💝",
+        paragraphs: [
+          "Happy 2nd monthsary, Sweetheart. 🥺❤️ Honestly, grabe kaayo akong smile while reading your message. I really, really appreciate it so much. Kabalo ko nga dili ka sanay mag express ug feelings in words, pero the fact nga you did this for me means more than you know.",
+          "Isa jud ni sa mga moments nga maingon ko nga I'm so lucky to have you. Thank you for taking the time and effort to put your feelings into words, especially knowing nga one of my love languages is words of affirmation. It truly means a lot to me sweetheart. Every word you said touched my heart deeply, and it reminded me why I choose you every single day. Being with you makes me grateful in so many ways. Thank you sa pagtiwala sa akoa, sa pag love sa akoa, and for making me feel appreciated.",
+          "Thankful ko for your love, your patience, and even for the way na gina try nimo imong sarili for us. Ayaw jud kabalaka, wala jud koy plano nga ilisan ka or mangita ug lain, ikaw ra jud akong pilion magpakailanman and I am so so so happy ma ikaw akong nakaila bilang mga last girl and hoping will be. I'm so proud of you, and I'm thankful for how we've grown together in these past two months. I promise to keep choosing you, to love you better each day, and to appreciate you the same way you appreciate me. I love you so much sweetheart, always. ❤️ I love love love you so badd."
+        ],
+        specialNote: "🌿 Two months of growing together, and I'm excited for many more. 🌿"
+      }
+    },
+    3: {
+      title: "3rd Monthsary",
+      subtitle: "Building Memories",
+      emoji: "📸",
+      letter: {
+        greeting: "My Sweetheart 💖",
+        paragraphs: [
+          "Happy 3rd monthsary, my sweetheart 💚 3 months na jud ta hehe. Murag dali ra kaayo ang time basta ikaw akong kauban permi. Thank you sa tanan, sa constant love, and sa mga pasensya na gina pakita nmo, especially sa pag sabot sa akoa even when I’m not easy to handle.",
+          "Swerte kaayo ko nga naa ka sa akong life, ako imong napili. Ikaw akong pahulay everyday, ginasabayan mo gihapon ko bisag lisod sa imoha 💚 dira pa lng daan, ikaw na akong kalipay. I love you always, ha. Ingat pud ka sa mga adlaw na di tika makauban. Happy 3rd monthsary usab. More monthsary to come, and can't wait na mag celebrate ta og Anniversaries together. I love youuuu sobra 💚",
+          "See you later for more love 💚"
+        ],
+        specialNote: "🎨 Three months of memories I'll treasure forever. 🎨"
+      }
+    },
+    4: {
+      title: "4th Monthsary",
+      subtitle: "Stronger Together",
+      emoji: "💪",
+      letter: {
+        greeting: "My Everything 💗",
+        paragraphs: [
+          "Happy 4th monthsary, sweetheart 💚💚. Four months na ta, and until now I still can’t believe nga ako ang imong gipili. I know dili ako ang standard nimo, dili ko perfect, and I have so many flaws, inarte, inOA, og makalagot para sa imoha nga nag sige ko'g overthink. Pero bisan ana, ako gihapon ang imong gipili para higugmaon, and hoping nga dili ka easily mu give up sa akoa, although kapoyon ka pero never mag cross sa imong mind to give up because you love me. And that alone makes me feel like the luckiest person alive. Maybe I’m not the best on your list, maybe I don’t have everything you once imagined. But the fact nga you chose me, stayed with me, and continue loving me, that means everything. Reverse man siya kay dapat siguro ikaw ang lucky hahahaha charlang, but honestly ako jud ang mas lucky to have you.",
+          "Thank you for loving someone like me. Because of you, I want to be better every single day. I’ll give you my time, my effort, my loyalty, ihatag nako tanan in exchange for the love you gave me. Not because I have to, but because you deserve it.",
+          "Salamat sa pagpili sa ako every day. I promise to love you sincerely and consistently. Here’s to more months, more memories, and more love together. 💕💚"
+        ],
+        specialNote: "🌟 Four months of choosing each other, every single day. 🌟"
+      }
+    },
+    5: {
+      title: "5th Monthsary",
+      subtitle: "Falling More Each Day",
+      emoji: "💫",
+      letter: {
+        greeting: "My Darling 💕",
+        paragraphs: [
+          "Happy monthsary, Sweetheart💚Another month with you, and I still find myself smiling even tho gina adjust na nako akong sarili for not overthinking too much, gaya ng mga gusto mo and at the little things you do. Thank you for staying, for understanding me even na lisod kaayo ko ideal with, and for loving me in ways na never nako gina expect. Every day with you feels like a blessing I don’t want to take for granted. Kabalo ko na daghan ta og misunderstandings usahay. Pero I hope masabtan nimo nga normal ra jud na sa usa ka relationship. Dili man gyud permi perfect, pero ang importante kay willing ta mag fix sa atong problems, hoping ma fix dayon, mag sinabtanay, ug mag stay gihapon para sa isa't isa.",
+          "I know we’re not perfect, and we’ve had our ups and downs, pero thankful kaayo ko kay bisan ana, we still choose each other every single day. Ga learn ko, ga grow ko, and trying to be better for you, and for us. I love you.and I’ll keep choosing you everyday no matter what.",
+          "I love you always 💚"
+        ],
+        specialNote: "🌈 Five months of loving you, and I want a lifetime more. 🌈"
+      }
+    },
+    6: {
+      title: "6th Monthsary",
+      subtitle: "Half a Year of Happiness",
+      emoji: "🎉",
+      letter: {
+        greeting: "My Forever 💝",
+        paragraphs: [
+          "Happy 6th monthsary, Sweetheart! 💚. murag dali ra kaayo ang panahon pero kung hunahunaon, daghan na kaayo tag naagian together. From the happy moments, mga katawa, mga memories na dili gyud nako malimtan, up to the times na naglisod ta, nag away, ug naka feel ta ug kapoy emotionally. Pero despite everything, we still choosing each other, and that’s something I’m really thankful for. 💚.",
+          "Gusto lang nako magpasalamat sa imo, sa imong pag stay, sa imong patience, ug sa love na sige nimo gihatag bisan usahay lisod na kaayo. Kabalo ko na dili ko perfect, daghan ko ug kulang, ug naa koy moments na makasakit ko nimo without even realizing it. Pero I want you to know na I’m trying, and I will keep trying to be better for you, for us. Kabalo ko na naa kay mga times na kapoy naka, kanang murag di naka kabalo unsa gyud nga rest ang kailangan nimo. Kanang feeling na bisan unsaon nimo, murag bugat gihapon tanan. Ug kabalo ko usahay ako pud ang reason ana. Dili nako gusto na ingana imong ma feel because of me. I just want you to know na I see it, I understand it, and I care about it. Dili man permi dali ang atong relationship, pero para nako, worth it gihapon kaayo. Worth it ka. Ikaw. Bisan unsa pa ka complicated ang tanan, I still choose you. Every single day, even on the days na lisod kaayo. Kay for me, dili lang ni about sa kilig or sa happy moments, kundi about sa pag stay, pag sabot, ug pag laban bisag kapoy na. I want to be your pahinga, imong safe place, ug imong kakampi sa tanan. Dili lang sa maayo, pero lalo na sa mga panahong murag wala nakay energy magpatuloy. I may not always say the right words, pero tinuod akong feelings para nimo. I love you so much, more than I can explain.",
+          "Happy 6th monthsary again, sweetheart 💚 Here’s to more months, more memories, and more chances to grow together.💚"
+        ],
+        specialNote: "🎊 Six months down, forever to go! 🎊"
+      }
+    },
+    7: {
+      title: "7th Monthsary",
+      subtitle: "My One & Only",
+      emoji: "👑",
+      letter: {
+        greeting: "My One and Only 💖👑",
+        paragraphs: [
+          "It's been seven months already, and honestly, every day with you has been one of the greatest blessings in my life. Looking back, daghan na kaayo ta'g naagian together... mga happy moments, challenges, mga misunderstandings, mga kalipay , og mga countless memories nga akong gina cherish hangtod karon. Through all those moments, one thing has never changed: my love for you.",
+          "Thank you for staying with me, for loving me despite my flaws, and for always being patient with me. Thank you sa imong understanding, sa imong care, ug sa imong support bisan usahay lisod ko sabton. You have always been there for me, and I appreciate every little thing that you do. Usahay dili man nako ma express tanan akong gibati, pero kabalo ka nga dako kaayo kag lugar sa akong heart.",
+          "As we celebrate our 7th monthsary, gusto lang nako nga makahibalo ka kung unsa ka ka special sa akoa. Gitagaan ko nimog kahayag everyday, and my future more exciting. Every conversation, every call, and even every small argument reminds me that what we have is real and worth fighting for.",
+          "Naa pud koy gusto i-share nimo nga dugay na nako gihuna hunaan. Although dili pa man ko ready modawat nga mag join sa BCC karon, dili tungod kay wala koy interest or dili nako gusto. Sa tinuod lang, dili pa lang gyud ko comfortable sa karon. Naa pa koy mga butang nga akong gina process ug mga hunahuna nga gusto sa nako masabtan ug ma settle.",
+          "Pero gusto nako nga makabalo ka nga I know someday ma-win ra jud nako ni puhon. I believe nga maabot ra ang panahon nga ready na ko. Hatagi lang ko og gamay nga time para makahunahuna ug tarong hangtod mawala na ang mga confused ug mga butang nga naga stop sa akong mind. I will join, but not now. Gusto nako nga mo-join ko nga whole-heartedly, kanang wala nay doubts ug wala nay naga pugong sa akong hunahuna. Thank you kaayo, sweetheart, sa pagsabot sa akoa ug sa dili pagpugos nako. I really appreciate it.",
+          "I also want to say sorry kung simple ra kaayo akong effort ani nga app. Hahahaha. Kabalo ko usahay kulang ra kaayo ni compared sa tanan nga imong deserve. Pero bisan simple ra ni, every word diri comes from my heart. This is one of the ways nga akong mapakita nimo kung unsa ka nako ka love ug ka appreciate. And honestly, I will keep doing this. I will keep making efforts, keep loving you, keep choosing you, and keep reminding you how important you are to me until the day we finally get married and even beyond that. ❤️",
+          "And before I end this message, gusto pud nako iingon nga proud kaayo ko nimo sa imong OJT. ❤️ Kabalo ko nga dili lalim ang imong journey karon. Daghan kag malearn, daghan kag mameet nga mga tao, ug daghan pud kag experiences nga magain. Bisan mag layo ta usahay tungod sa imong mga responsibilities, happy kaayo ko kay makita nako nga nagapaningkamot ka para sa imong future. Always remember nga naa ra ko diri, supporting you in every step nga imong himuon.",
+          "Honestly, naa koy usa ka simple nga prayer ug wish para sa atoa. I hope nga after sa imong OJT, pagbalik nimo, ako lang gihapon. Walay lain, ikaw ug ako lang gihapon, mas strong ug mas in love kaysa sauna. I know daghan kag maencounter nga mga tawo along the way, pero salig ko nimo ug sa atong relasyon.",
+          "Thank you kaayo kay faithful ug loyal ka sa akoa. Dili nako na gina take for granted. Sa panahon karon nga dali ra kaayo mausab ang mga butang ug mga tao, thankful kaayo ko nga nagpabilin kang tinuod sa atong relasyon. Thank you for always choosing me, for respecting what we have, and for giving me peace of mind pinaagi sa imong honesty, loyalty, ug genuine nga love. One of the reasons nga mas love pa jud nimo ko every day is because of the trust nga imong gihatag sa akoa.",
+          "No matter where your OJT takes you, always remember nga ikaw ra gihapon ang akong pilion every day. And I hope nga when this chapter of your life ends, we'll still be here together, hand in hand, continuing the future that we've been dreaming about. ❤️",
+          "Happy 7th Monthsary, my love. Here's to more months, more years, more memories, and a lifetime together. I love you always, sweetheart. Today, tomorrow, and every day after that. ❤️🥰"
+        ],
+        specialNote: "💍 I love you in a way I've never loved anyone before. You are my forever. 💍"
+      }
+    }
+  };
 
   useEffect(() => {
-    // Trigger heart animation periodically
     const interval = setInterval(() => {
       setShowHearts(true);
       setTimeout(() => setShowHearts(false), 3000);
-    }, 10000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
+  const getMonthContent = (month) => {
+    return monthContent[month] || monthContent[7];
+  };
+
   const renderView = () => {
+    if (showGame) {
+      return <FlappyLoveBird onBack={() => setShowGame(false)} />;
+    }
+    
+    if (showSudoku) {
+      return <Sudoku onBack={() => setShowSudoku(false)} />;
+    }
+
     switch (currentView) {
       case 'photos':
         return <PhotosGallery onBack={() => setCurrentView('main')} />;
@@ -28,208 +153,336 @@ function App() {
       case 'videos':
         return <VideosGallery onBack={() => setCurrentView('main')} />;
       default:
+        const currentMonthData = getMonthContent(selectedMonth);
         return (
-          <div className="container">
-            {/* Enhanced Animated Background */}
-            <div className="enhanced-background">
-              <div className="floating-hearts">
-                {[...Array(15)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="floating-heart"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 8}s`,
-                      fontSize: `${Math.random() * 20 + 20}px`
-                    }}
-                  >💖</div>
-                ))}
-              </div>
-              <div className="sparkles">
+          <div className="container-redesign">
+            {/* Animated Background */}
+            <div className="romantic-bg">
+              <div className="gradient-bg"></div>
+              <div className="floating-circles">
                 {[...Array(20)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="sparkle"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 3}s`
-                    }}
-                  ></div>
+                  <div key={i} className="circle" style={{
+                    '--i': i,
+                    '--size': Math.random() * 100 + 50,
+                    '--left': Math.random() * 100,
+                    '--delay': Math.random() * 10
+                  }}></div>
                 ))}
               </div>
             </div>
 
-            {/* Burst Hearts Effect */}
+            {/* Top Banner Decoration */}
+            <div className="top-banner">
+              <div className="banner-content">
+                <div className="banner-hearts left">
+                  {['💖', '💕', '💝', '💗', '💓'].map((heart, i) => (
+                    <span key={i} className="banner-heart" style={{ animationDelay: `${i * 0.3}s` }}>{heart}</span>
+                  ))}
+                </div>
+                <div className="banner-text">
+                  <span className="banner-couple-name">Brian ✨ Jasmine</span>
+                  <span className="banner-tagline">Forever in Love</span>
+                </div>
+                <div className="banner-hearts right">
+                  {['💖', '💕', '💝', '💗', '💓'].map((heart, i) => (
+                    <span key={i} className="banner-heart" style={{ animationDelay: `${i * 0.3}s` }}>{heart}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="banner-ribbon"></div>
+            </div>
+
+            {/* Top Floating Hearts Row */}
+            <div className="top-floating-hearts">
+              {[...Array(12)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className="top-heart"
+                  style={{
+                    left: `${(i * 8.33)}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: `${3 + Math.random() * 2}s`
+                  }}
+                >
+                  {['💖', '💕', '💝', '💗', '💓', '❤️', '💘'][Math.floor(Math.random() * 7)]}
+                </div>
+              ))}
+            </div>
+
+            {/* Heart Burst Effect */}
             {showHearts && (
-              <div className="heart-burst">
-                {[...Array(30)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="burst-heart"
-                    style={{
-                      animationDelay: `${Math.random() * 2}s`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`
-                    }}
-                  >{['💖', '💕', '💝', '💗', '💓'][Math.floor(Math.random() * 5)]}</div>
+              <div className="heart-explosion">
+                {[...Array(50)].map((_, i) => (
+                  <div key={i} className="exploding-heart" style={{
+                    '--angle': Math.random() * 360,
+                    '--distance': Math.random() * 200 + 100,
+                    '--delay': Math.random() * 0.5,
+                    animationDelay: `${Math.random() * 0.5}s`
+                  }}>
+                    {['💖', '💕', '💝', '💗', '💓', '❤️', '💘'][Math.floor(Math.random() * 7)]}
+                  </div>
                 ))}
               </div>
             )}
 
             {/* Main Content */}
-            <div className="content-wrapper">
-              <div className="romantic-header">
-                <div className="title-container">
-                  <h1 className="main-title">
-                    <span className="title-word">Happy</span>
-                    <span className="title-word">1st</span>
-                    <span className="title-word">Monthsary,</span>
-                    <span className="title-word">My</span>
-                    <span className="title-word">Sweetheart</span>
-                  </h1>
-                  <div className="title-emoji">💖✨</div>
-                </div>
+            <div className="content-wrapper-redesign">
+              {/* Romantic Divider Top */}
+              <div className="romantic-divider">
+                <span className="divider-star">✨</span>
+                <span className="divider-line"></span>
+                <span className="divider-heart">💖</span>
+                <span className="divider-line"></span>
+                <span className="divider-star">✨</span>
               </div>
 
-              {/* Love Letter Container */}
-              <div className="love-letter-container">
-                <div className="envelope">
-                  <div className="envelope-flap"></div>
-                  <div className="envelope-body">
-                    <div className="letter">
-                      <div className="letter-content">
-                        <div className="letter-header">
-                          <span className="date">One Month of Pure Happiness</span>
-                        </div>
-                        
-                        <div className="message-scroll">
-                          <p className="message-paragraph animated">
-                            My Dearest <span className="highlight">Jasmine,</span>,
-                          </p>
-                          
-                          <p className="message-paragraph animated">
-                            Since that moment I first saw you on Tinder, I never expected nga ikaw diay ang babae who would change everything for me. Sa imong cute nga smile sa picture, I didn't know you would become the person I'd think about every day.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            When we moved to Instagram on October 13, every story you shared… even the ones that hurt… I listened because I wanted to understand you, not to judge you. Sometimes it cut me deep, pero kabalo ka? I still chose to stay. I stayed because somehow, even with the pain, my heart kept telling me, "She's worth it."
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            Sa mga remaining days sa October, katong nag–love ta without label, I didn't expect nga mo-grow diay ni into something real. You became my peace and my chaos at the same time, but I still wanted more of you every day.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            Then came November 2, the day I tried to surprise you with flowers and a mountain view. Nagsalig ko nga smooth kaayo akong plan pero sayop kay nakita nimo accidentally ang flowers sulod sa akong motor hahahahaha. Pagka-failed jud nako. But when you laughed, when you looked at me with that smile I can never forget that I realized something: I don't need to be perfect for you to love me. I just needed to be real.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            And I know I'm not the most gentleman guy in this world. I know daghan ko'g mga flaws and Imperfections, I overthink, I get jealous easily, I misunderstand things, and sometimes I get scared of losing you. Pero tungod nimo, nag experience ko'g adjust, nag experience ko'g grow kay ikaw ra akong gusto mapalipay sa tanan.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            Jasmine, Sweetheart, thank you for choosing me. Thank you for loving me even when my mind gets noisy. Even when my heart still gets hurt by things in the past. You still stayed. And that's something I won't ever forget.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            I may not say this all the time pero… ikaw akong last. The woman I want to build a future with. The woman I want to marry someday. The mother of the child we will raise together. I want to reach that "last" with you hand in hand, bisan pa ug naay kasakit, kalibog, ug mga away bisan asa.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            I love you in a way I've never loved anyone before. A kind of love that scares me, hurts me, heals me, and makes me hope for forever. All at the same time. Ikaw ra. Ug ikaw gihapon sa ugma. Ug ikaw gihapon sa last.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            And before I end this message, there's something I want you to know: I made a song for you. I poured every piece of my heart into it, our story, my love, my pain, my hope, everything nga wa nako masulti nimo personally. I hope you'll listen. I hope ma-feel nimo unsa ka ka–special sa akong kinabuhi.
-                          </p>
-
-                          <p className="message-paragraph animated">
-                            Click the button below. Sweetheart, this song is for you. ❤️🎧
-                          </p>
-
-                          <div className="letter-footer">
-                            <p className="signature">
-                              Forever and Always,<br />
-                              <span className="signature-name">Kurt Bryy</span>
-                            </p>
-                            <div className="seal">💝</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              {/* Header Section */}
+              <div className="hero-section">
+                {/* Crown Decoration for 7th Month */}
+                {selectedMonth === 7 && (
+                  <div className="crown-decoration">
+                    <div className="crown">👑</div>
+                    <div className="crown-sparkles">✨💫✨</div>
                   </div>
+                )}
+
+                <div className="month-badge-large">
+                  <span className="month-emoji">{currentMonthData.emoji}</span>
+                  <span className="month-text">Month {selectedMonth}</span>
                 </div>
-              </div>
+                
+                <h1 className="romantic-title">
+                  <span className="title-line">Happy</span>
+                  <span className="title-line gradient-text">{currentMonthData.title}</span>
+                  <span className="title-line">My Love!</span>
+                </h1>
+                
+                <p className="subtitle-text">{currentMonthData.subtitle}</p>
 
-              {/* Interactive Elements */}
-              <div className="interactive-section">
-                <div className="surprise-buttons">
-                  {/* Our Pictures Button */}
-                  <div 
-                    className="photos-btn romantic-btn"
-                    onClick={() => setCurrentView('photos')}
-                  >
-                    <div className="photo-collage">
-                      <div className="photo-frame main-photo">
-                        <div className="photo-placeholder">📸</div>
-                        <div className="photo-overlay">Our Memories</div>
-                      </div>
-                      <div className="photo-frame small-photo-1">
-                        <div className="photo-placeholder">❤️</div>
-                      </div>
-                      <div className="photo-frame small-photo-2">
-                        <div className="photo-placeholder">✨</div>
-                      </div>
-                      <div className="photo-frame small-photo-3">
-                        <div className="photo-placeholder">💕</div>
-                      </div>
-                    </div>
-                    <span className="btn-text">Our Beautiful Memories</span>
-                    <div className="btn-glow"></div>
-                    <div className="canva-sticker">🎨</div>
-                  </div>
-                  
-                  {/* Our Videos Button */}
-                  <div 
-                    className="videos-btn romantic-btn"
-                    onClick={() => setCurrentView('videos')}
-                  >
-                    <div className="video-player-preview">
-                      <div className="video-screen">
-                        <div className="play-button">▶️</div>
-                        <div className="video-time">01:23</div>
-                      </div>
-                      <div className="video-thumbnails">
-                        <div className="video-thumbnail thumb-1">🎬</div>
-                        <div className="video-thumbnail thumb-2">📹</div>
-                        <div className="video-thumbnail thumb-3">🎥</div>
-                      </div>
-                    </div>
-                    <span className="btn-text">Our Video Moments</span>
-                    <div className="btn-glow"></div>
-                    <div className="video-sticker">🎞️</div>
-                  </div>
-                  
+                {/* Animated Underline */}
+                <div className="title-underline">
+                  <div className="underline-heart">💝</div>
+                </div>
+
+                {/* Month Selector */}
+                <div className="month-selector-redesign">
                   <button 
-                    className="song-btn romantic-btn"
-                    onClick={() => setCurrentView('song')}
+                    className="selector-trigger"
+                    onClick={() => setShowMonthSelector(!showMonthSelector)}
                   >
-                    <span className="btn-icon">🎵</span>
-                    <span className="btn-text">Listen to my Song</span>
-                    <div className="btn-glow"></div>
+                    <span>📅</span>
+                    <span>View Other Months</span>
+                    <span className={`arrow ${showMonthSelector ? 'rotate' : ''}`}>▼</span>
                   </button>
+                  
+                  {showMonthSelector && (
+                    <div className="selector-dropdown">
+                      <div className="dropdown-header">
+                        <span>💖 Our Journey 💖</span>
+                      </div>
+                      <div className="month-grid">
+                        {[1, 2, 3, 4, 5, 6, 7].map(month => (
+                          <div
+                            key={month}
+                            className={`month-card ${selectedMonth === month ? 'active' : ''}`}
+                            onClick={() => {
+                              setSelectedMonth(month);
+                              setShowMonthSelector(false);
+                            }}
+                          >
+                            <span className="month-num">{month}</span>
+                            <span className="month-suffix">
+                              {month === 1 ? 'st' : month === 2 ? 'nd' : month === 3 ? 'rd' : 'th'}
+                            </span>
+                            <span className="month-title">Monthsary</span>
+                            {selectedMonth === month && <span className="active-mark">✓</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {/* Love Meter */}
-                <div className="love-meter">
-                  <div className="meter-label">Our Love Meter</div>
-                  <div className="meter-bar">
-                    <div className="meter-fill" style={{width: '100%'}}>
-                      <span className="meter-text">Infinite Love 💖</span>
+              {/* Love Letter Card */}
+              <div className="letter-card">
+                <div className="card-inner">
+                  <div className="letter-decoration">
+                    <div className="decoration-left">🌸</div>
+                    <div className="decoration-right">🌺</div>
+                  </div>
+                  
+                  <div className="letter-header-redesign">
+                    <div className="date-badge">
+                      <span>📖</span>
+                      <span>{selectedMonth} {selectedMonth === 1 ? 'Month' : 'Months'} of Love</span>
+                    </div>
+                  </div>
+
+                  <div className="letter-body">
+                    <div className="greeting">
+                      <span className="greeting-icon">💌</span>
+                      <h3>{currentMonthData.letter.greeting}</h3>
+                    </div>
+
+                    <div className="letter-paragraphs">
+                      {currentMonthData.letter.paragraphs.map((paragraph, idx) => (
+                        <p key={idx} className="love-paragraph" style={{ animationDelay: `${idx * 0.1}s` }}>
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+
+                    <div className="special-note-redesign">
+                      <div className="note-border">
+                        <p className="note-text-redesign">
+                          <span className="note-quote">"</span>
+                          {currentMonthData.letter.specialNote}
+                          <span className="note-quote">"</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="signature-redesign">
+                      <div className="signature-line"></div>
+                      <div className="signature-content">
+                        <span className="signature-text">Forever Yours,</span>
+                        <span className="signature-name">Brian 💝</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Interactive Buttons */}
+              <div className="action-buttons">
+                <button 
+                  className={`action-btn photos-btn-redesign ${hoveredButton === 'photos' ? 'hovered' : ''}`}
+                  onClick={() => setCurrentView('photos')}
+                  onMouseEnter={() => setHoveredButton('photos')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">📸</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">Our Gallery</span>
+                    <span className="btn-description">Cherished Moments Together</span>
+                  </div>
+                  <div className="btn-badge">✨</div>
+                </button>
+
+                <button 
+                  className={`action-btn videos-btn-redesign ${hoveredButton === 'videos' ? 'hovered' : ''}`}
+                  onClick={() => setCurrentView('videos')}
+                  onMouseEnter={() => setHoveredButton('videos')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">🎬</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">Video Memories</span>
+                    <span className="btn-description">Our Story in Motion</span>
+                  </div>
+                  <div className="btn-badge">🎥</div>
+                </button>
+
+                <button 
+                  className={`action-btn song-btn-redesign ${hoveredButton === 'song' ? 'hovered' : ''}`}
+                  onClick={() => setCurrentView('song')}
+                  onMouseEnter={() => setHoveredButton('song')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">🎵</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">My Song For You</span>
+                    <span className="btn-description">Listen to My Heart</span>
+                  </div>
+                  <div className="btn-badge">🎧</div>
+                </button>
+
+                {/* Flappy Love Bird Game Button */}
+                <button 
+                  className={`action-btn game-btn-redesign ${hoveredButton === 'game' ? 'hovered' : ''}`}
+                  onClick={() => setShowGame(true)}
+                  onMouseEnter={() => setHoveredButton('game')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">🎮</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">Flappy Love Bird</span>
+                    <span className="btn-description">Play a Fun Love Game</span>
+                  </div>
+                  <div className="btn-badge">🐦</div>
+                </button>
+
+                {/* Sudoku Game Button */}
+                <button 
+                  className={`action-btn sudoku-btn-redesign ${hoveredButton === 'sudoku' ? 'hovered' : ''}`}
+                  onClick={() => setShowSudoku(true)}
+                  onMouseEnter={() => setHoveredButton('sudoku')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">🔢</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">Sudoku Puzzle</span>
+                    <span className="btn-description">Challenge Your Mind</span>
+                  </div>
+                  <div className="btn-badge">🧩</div>
+                </button>
+              </div>
+
+              {/* Navigation Footer */}
+              <div className="nav-footer">
+                <button 
+                  className="nav-arrow prev"
+                  onClick={() => selectedMonth > 1 && setSelectedMonth(selectedMonth - 1)}
+                  disabled={selectedMonth === 1}
+                >
+                  <span>◀</span>
+                  <span>Previous Month</span>
+                </button>
+                
+                <div className="progress-indicator">
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${(selectedMonth / 7) * 100}%` }}>
+                      <div className="progress-glow"></div>
+                    </div>
+                  </div>
+                  <div className="progress-text">
+                    {selectedMonth} of 7 Months
+                  </div>
+                </div>
+                
+                <button 
+                  className="nav-arrow next"
+                  onClick={() => selectedMonth < 7 && setSelectedMonth(selectedMonth + 1)}
+                  disabled={selectedMonth === 7}
+                >
+                  <span>Next Month</span>
+                  <span>▶</span>
+                </button>
+              </div>
+
+              {/* Floating Elements */}
+              <div className="floating-elements">
+                <div className="float-element">💕</div>
+                <div className="float-element">💖</div>
+                <div className="float-element">💗</div>
+                <div className="float-element">✨</div>
+                <div className="float-element">🌸</div>
               </div>
             </div>
           </div>
@@ -238,7 +491,7 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App-redesign">
       {renderView()}
     </div>
   );
