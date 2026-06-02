@@ -1,0 +1,447 @@
+/* Pacman Game Styles - Mobile Optimized */
+
+.pacman-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Poppins', sans-serif;
+}
+
+/* Header */
+.pacman-header {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 0 10px;
+  gap: 10px;
+}
+
+.back-button, .touch-toggle {
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.back-button:active, .touch-toggle:active {
+  transform: scale(0.95);
+}
+
+.pacman-title {
+  color: #ffff00;
+  font-size: 24px;
+  margin: 0;
+  text-shadow: 2px 2px 0 #ff6600;
+  letter-spacing: 2px;
+  flex: 1;
+  text-align: center;
+}
+
+/* Stats Container */
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 500px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 25px;
+  padding: 8px 15px;
+  margin-bottom: 15px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.stat-icon {
+  font-size: 16px;
+}
+
+.stat-value {
+  font-size: 14px;
+}
+
+/* Game Board */
+.game-board {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin: 0 auto;
+}
+
+/* Touch Controls */
+.touch-controls {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 60px;
+  backdrop-filter: blur(10px);
+}
+
+.touch-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.touch-btn {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #ffff00, #ffaa00);
+  border: none;
+  border-radius: 50%;
+  font-size: 32px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  color: #1a1a2e;
+}
+
+.touch-btn:active {
+  transform: scale(0.92);
+  background: linear-gradient(135deg, #ffaa00, #ffff00);
+}
+
+/* Start Screen */
+.start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  border-radius: 10px;
+}
+
+.start-card {
+  text-align: center;
+  padding: 25px 20px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 20px;
+  border: 2px solid #ffff00;
+  width: 85%;
+  max-width: 280px;
+}
+
+.pacman-icon {
+  font-size: 60px;
+  animation: bounce 1s infinite;
+}
+
+.start-card h2 {
+  color: #ffff00;
+  font-size: 24px;
+  margin: 10px 0;
+  text-shadow: 2px 2px 0 #ff6600;
+}
+
+.start-card p {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.controls-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 15px;
+  margin: 15px 0;
+}
+
+.controls-info p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+}
+
+.arrow-keys {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 24px;
+  color: #ffff00;
+}
+
+.start-button {
+  background: linear-gradient(135deg, #ffff00, #ffaa00);
+  color: #1a1a2e;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  width: 100%;
+}
+
+.start-button:active {
+  transform: scale(0.95);
+}
+
+/* Game Over Screen */
+.gameover-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  border-radius: 10px;
+}
+
+.gameover-card {
+  text-align: center;
+  padding: 25px 20px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 20px;
+  width: 85%;
+  max-width: 280px;
+}
+
+.gameover-card.victory {
+  border: 2px solid #ffff00;
+}
+
+.victory-icon, .gameover-icon {
+  font-size: 60px;
+  margin-bottom: 10px;
+}
+
+.gameover-card h2 {
+  color: #ffff00;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.gameover-card p {
+  color: white;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.final-score {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 15px;
+  margin: 15px 0;
+}
+
+.final-score div:first-child {
+  color: #ccc;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.final-number {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffff00;
+}
+
+.new-record {
+  background: linear-gradient(135deg, #ffd700, #ffb347);
+  padding: 8px;
+  border-radius: 10px;
+  font-weight: bold;
+  margin: 10px 0;
+  animation: pulse 0.5s infinite;
+  color: #fff;
+  font-size: 12px;
+}
+
+.play-again {
+  background: linear-gradient(135deg, #ffff00, #ffaa00);
+  color: #1a1a2e;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  width: 100%;
+}
+
+.play-again:active {
+  transform: scale(0.95);
+}
+
+/* Instructions Mobile */
+.instructions-mobile {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  padding: 8px 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 25px;
+  color: white;
+  font-size: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.instructions-mobile span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Wall styling */
+.wall {
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .pacman-title {
+    font-size: 18px;
+  }
+  
+  .stat-item {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  
+  .stat-icon {
+    font-size: 12px;
+  }
+  
+  .stat-value {
+    font-size: 11px;
+  }
+  
+  .touch-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+  
+  .start-card, .gameover-card {
+    padding: 20px 15px;
+  }
+  
+  .pacman-icon, .victory-icon, .gameover-icon {
+    font-size: 50px;
+  }
+  
+  .start-card h2, .gameover-card h2 {
+    font-size: 20px;
+  }
+  
+  .final-number {
+    font-size: 32px;
+  }
+  
+  .instructions-mobile {
+    font-size: 9px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .touch-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+  }
+  
+  .touch-row {
+    gap: 10px;
+  }
+  
+  .stat-item {
+    font-size: 10px;
+  }
+}
+
+/* Landscape Mode */
+@media (orientation: landscape) and (max-height: 500px) {
+  .pacman-container {
+    padding: 5px;
+  }
+  
+  .stats-container {
+    margin-bottom: 8px;
+    padding: 5px 12px;
+  }
+  
+  .touch-controls {
+    margin-top: 10px;
+    padding: 10px;
+  }
+  
+  .touch-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+  
+  .instructions-mobile {
+    margin-top: 8px;
+    padding: 5px 12px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .touch-btn:active {
+    transform: scale(0.92);
+  }
+  
+  .start-button:active,
+  .play-again:active,
+  .back-button:active,
+  .touch-toggle:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Haptic feedback simulation */
+.touch-btn {
+  -webkit-tap-highlight-color: transparent;
+}

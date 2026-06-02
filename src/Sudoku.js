@@ -20,10 +20,34 @@ function Sudoku({ onBack, currentPlayer }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   
-  // Refs to prevent multiple triggers
-  const menuButtonRef = useRef(null);
-  const menuOverlayRef = useRef(null);
-  const isMenuOpeningRef = useRef(false);
+  // Romantic Food Rewards
+  const [showRewardSelection, setShowRewardSelection] = useState(false);
+  const [rewardType, setRewardType] = useState(null);
+  const [selectedReward, setSelectedReward] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+  const [allRewards, setAllRewards] = useState([]);
+  
+  // Food options
+  const foodOptions = {
+    junkfood: ['🍟 Patatas', '🍿 Sweet Popcorn', '🥨 Nova', '🌮 Martis chicharon', 'Cracklings', '🧀 Piatos', '🍗 Chippy', '🌭 Clover'],
+    drinks: ['🥤 Coke', '🧋 Bubble Tea', '☕ Iced Coffee', '🍵 Milk Tea', '🧃 Soda Juice', '🥛 Milkshake', '🍹 Lemonade', '🥤 Sprite'],
+    sweets: ['🍰 Cake Slice', '🍪 Cookies', '🍩 Donut', '🍦 Ice Cream', '🧁 Cupcake', '🍫 Chocolate Bar', '🍬 Candy', '🍮 Pudding'],
+    fastfood: [
+      { name: '🍔 Jollibee', value: 'jollibee' },
+      { name: '🍟 McDonald\'s', value: 'mcdonalds' },
+      { name: '🍗 Mang Inasal', value: 'manginasal' },
+      { name: '🥟 Chowking', value: 'chowking' },
+      { name: '🍗 MadChick', value: 'madchick' }
+    ]
+  };
+  
+  const timeLimits = {
+    easy: 240, // 4 minutes
+    medium: 480, // 8 minutes
+    hard: null, // no time limit, just completion
+    expert: null // no time limit, just completion
+  };
   
   // Challenge & Rewards States
   const [activeChallenges, setActiveChallenges] = useState([]);
@@ -177,68 +201,178 @@ function Sudoku({ onBack, currentPlayer }) {
         totalPoints: 0
       });
     }
+    
+    // Load saved rewards
+    const savedRewards = localStorage.getItem(`sudokuFoodRewards_${playerName}`);
+    if (savedRewards) {
+      setAllRewards(JSON.parse(savedRewards));
+    }
   };
 
-  // Save player stats
-  const savePlayerStats = (newStats) => {
+  // Save rewards
+  const saveReward = (reward) => {
     const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
-    localStorage.setItem(`sudokuPlayerStats_${playerName}`, JSON.stringify(newStats));
-    setPlayerStats(newStats);
+    const newRewards = [...allRewards, reward];
+    setAllRewards(newRewards);
+    localStorage.setItem(`sudokuFoodRewards_${playerName}`, JSON.stringify(newRewards));
   };
 
-  // Update leaderboard with new score
-  const updateLeaderboard = (gameData) => {
-    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+  // Check and handle romantic food rewards
+  const checkRomanticReward = (difficulty, completionTime) => {
+    let rewardEarned = null;
     
-    const newEntry = {
-      id: `${playerName}-${difficulty}-${Date.now()}`,
-      name: playerName,
-      difficulty: difficulty,
-      time: timer,
-      mistakes: mistakes,
-      hintsUsed: 3 - hintsLeft,
-      perfectGame: mistakes === 0,
-      totalPoints: gameData.pointsEarned,
-      date: new Date().toISOString(),
-      isBrian: false
-    };
-    
-    const existingIndex = leaderboard.findIndex(
-      entry => entry.name === playerName && entry.difficulty === difficulty && !entry.isBrian
-    );
-    
-    let newLeaderboard;
-    if (existingIndex !== -1) {
-      if (timer < leaderboard[existingIndex].time) {
-        newLeaderboard = [...leaderboard];
-        newLeaderboard[existingIndex] = newEntry;
-      } else {
-        newLeaderboard = [...leaderboard];
-      }
-    } else {
-      newLeaderboard = [...leaderboard, newEntry];
+    switch (difficulty) {
+      case 'easy':
+        if (completionTime <= timeLimits.easy) {
+          rewardEarned = {
+            type: 'junkfood',
+            message: '🎉 You completed Easy mode under 4 minutes! 🎉\nChoose your favorite junkfood!',
+            options: foodOptions.junkfood,
+            emoji: '🍟'
+          };
+          setRewardType('junkfood');
+          setShowRewardSelection(true);
+        }
+        break;
+      case 'medium':
+        if (completionTime <= timeLimits.medium) {
+          rewardEarned = {
+            type: 'drinks',
+            message: '🎉 You completed Medium mode under 8 minutes! 🎉\nChoose your favorite drink!',
+            options: foodOptions.drinks,
+            emoji: '🥤'
+          };
+          setRewardType('drinks');
+          setShowRewardSelection(true);
+        }
+        break;
+      case 'hard':
+        rewardEarned = {
+          type: 'sweets',
+          message: '🎉 You completed Hard mode! 🎉\nChoose your favorite sweet treat!',
+          options: foodOptions.sweets,
+          emoji: '🍰'
+        };
+        setRewardType('sweets');
+        setShowRewardSelection(true);
+        break;
+      case 'expert':
+        rewardEarned = {
+          type: 'fastfood',
+          message: '🎉🎉🎉 AMAZING! You completed EXPERT mode! 🎉🎉🎉\nChoose your favorite fastfood restaurant!',
+          options: foodOptions.fastfood,
+          emoji: '🍔'
+        };
+        setRewardType('fastfood');
+        setShowRewardSelection(true);
+        break;
+      default:
+        break;
     }
     
-    newLeaderboard.sort((a, b) => {
-      if (a.difficulty !== b.difficulty) {
-        const diffOrder = { easy: 1, medium: 2, hard: 3, expert: 4 };
-        return diffOrder[a.difficulty] - diffOrder[b.difficulty];
-      }
-      return a.time - b.time;
-    });
-    
-    const filteredLeaderboard = [];
-    const difficulties = ['easy', 'medium', 'hard', 'expert'];
-    difficulties.forEach(diff => {
-      const diffEntries = newLeaderboard.filter(entry => entry.difficulty === diff);
-      filteredLeaderboard.push(...diffEntries.slice(0, 10));
-    });
-    
-    setLeaderboard(filteredLeaderboard);
-    localStorage.setItem('sudokuLeaderboard', JSON.stringify(filteredLeaderboard));
+    return rewardEarned;
   };
 
-  // Load saved data on mount
+  // Handle reward selection
+  const handleRewardSelection = (selected) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    const reward = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      difficulty: difficulty,
+      time: timer,
+      type: rewardType,
+      selection: selected,
+      playerName: playerName
+    };
+    
+    saveReward(reward);
+    setSelectedReward(selected);
+    setReceiptData(reward);
+    setShowRewardSelection(false);
+    setShowReceipt(true);
+    
+    if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
+  };
+
+  // Print receipt
+  const printReceipt = () => {
+    const printContent = document.getElementById('receipt-content');
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Love Date Receipt</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              padding: 20px;
+              background: #fff;
+            }
+            .receipt {
+              max-width: 300px;
+              margin: 0 auto;
+              border: 2px dashed #ff6b9d;
+              padding: 20px;
+              border-radius: 10px;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 1px dashed #ccc;
+              padding-bottom: 10px;
+              margin-bottom: 15px;
+            }
+            .header h1 {
+              color: #ff3366;
+              margin: 0;
+              font-size: 20px;
+            }
+            .header p {
+              color: #666;
+              margin: 5px 0;
+            }
+            .content {
+              margin: 15px 0;
+            }
+            .reward-item {
+              background: #f9f9f9;
+              padding: 10px;
+              margin: 10px 0;
+              border-radius: 5px;
+            }
+            .footer {
+              text-align: center;
+              border-top: 1px dashed #ccc;
+              padding-top: 10px;
+              margin-top: 15px;
+              font-size: 12px;
+              color: #666;
+            }
+            .thankyou {
+              text-align: center;
+              color: #ff3366;
+              font-weight: bold;
+              margin-top: 15px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            ${document.getElementById('receipt-content').innerHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Initialize leaderboard and load data
   useEffect(() => {
     const savedPoints = localStorage.getItem('sudokuTotalPoints');
     const savedRewards = localStorage.getItem('sudokuRewards');
@@ -330,7 +464,7 @@ function Sudoku({ onBack, currentPlayer }) {
     }
   };
 
-  // Generate a complete valid Sudoku solution
+  // Game generation functions
   const generateCompleteBoard = () => {
     const board = Array(9).fill().map(() => Array(9).fill(0));
     
@@ -445,6 +579,8 @@ function Sudoku({ onBack, currentPlayer }) {
     setSelectedNumber(null);
     setShowVictory(false);
     setIsInitialized(true);
+    setShowReceipt(false);
+    setShowRewardSelection(false);
   };
 
   useEffect(() => {
@@ -498,6 +634,9 @@ function Sudoku({ onBack, currentPlayer }) {
       setStreak(prev => prev + 1);
       checkChallenges(gameStats);
       setTotalPoints(prev => prev + totalEarned);
+      
+      // Check for romantic food reward
+      checkRomanticReward(difficulty, timer);
       
       setGameStatus('won');
       setShowVictory(true);
@@ -646,7 +785,66 @@ function Sudoku({ onBack, currentPlayer }) {
     }
   };
 
-  // Simple menu toggle without any delays or complex logic
+  // Save player stats
+  const savePlayerStats = (newStats) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    localStorage.setItem(`sudokuPlayerStats_${playerName}`, JSON.stringify(newStats));
+    setPlayerStats(newStats);
+  };
+
+  // Update leaderboard with new score
+  const updateLeaderboard = (gameData) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    
+    const newEntry = {
+      id: `${playerName}-${difficulty}-${Date.now()}`,
+      name: playerName,
+      difficulty: difficulty,
+      time: timer,
+      mistakes: mistakes,
+      hintsUsed: 3 - hintsLeft,
+      perfectGame: mistakes === 0,
+      totalPoints: gameData.pointsEarned,
+      date: new Date().toISOString(),
+      isBrian: false
+    };
+    
+    const existingIndex = leaderboard.findIndex(
+      entry => entry.name === playerName && entry.difficulty === difficulty && !entry.isBrian
+    );
+    
+    let newLeaderboard;
+    if (existingIndex !== -1) {
+      if (timer < leaderboard[existingIndex].time) {
+        newLeaderboard = [...leaderboard];
+        newLeaderboard[existingIndex] = newEntry;
+      } else {
+        newLeaderboard = [...leaderboard];
+      }
+    } else {
+      newLeaderboard = [...leaderboard, newEntry];
+    }
+    
+    newLeaderboard.sort((a, b) => {
+      if (a.difficulty !== b.difficulty) {
+        const diffOrder = { easy: 1, medium: 2, hard: 3, expert: 4 };
+        return diffOrder[a.difficulty] - diffOrder[b.difficulty];
+      }
+      return a.time - b.time;
+    });
+    
+    const filteredLeaderboard = [];
+    const difficulties = ['easy', 'medium', 'hard', 'expert'];
+    difficulties.forEach(diff => {
+      const diffEntries = newLeaderboard.filter(entry => entry.difficulty === diff);
+      filteredLeaderboard.push(...diffEntries.slice(0, 10));
+    });
+    
+    setLeaderboard(filteredLeaderboard);
+    localStorage.setItem('sudokuLeaderboard', JSON.stringify(filteredLeaderboard));
+  };
+
+  // Simple menu handlers
   const handleMenuClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -739,7 +937,171 @@ function Sudoku({ onBack, currentPlayer }) {
     return classes;
   };
 
-  // Don't render menu as separate component - render inline to prevent re-renders
+  // Reward Selection Modal
+  const RewardSelectionModal = () => (
+    <div className="reward-selection-overlay">
+      <div className="reward-selection-card">
+        <div className="reward-header">
+          <span className="reward-emoji">
+            {rewardType === 'junkfood' && '🍟'}
+            {rewardType === 'drinks' && '🥤'}
+            {rewardType === 'sweets' && '🍰'}
+            {rewardType === 'fastfood' && '🍔'}
+          </span>
+          <h2>Congratulations, {playerStats.name}! 💕</h2>
+        </div>
+        <div className="reward-message">
+          <p>
+            {rewardType === 'junkfood' && 'You completed Easy mode under 4 minutes! 🎉'}
+            {rewardType === 'drinks' && 'You completed Medium mode under 8 minutes! 🎉'}
+            {rewardType === 'sweets' && 'You completed Hard mode! 🎉'}
+            {rewardType === 'fastfood' && 'AMAZING! You completed EXPERT mode! 🎉🎉🎉'}
+          </p>
+          <p className="reward-question">Choose your reward:</p>
+        </div>
+        <div className="reward-options">
+          {(rewardType === 'junkfood' || rewardType === 'drinks' || rewardType === 'sweets') && 
+            foodOptions[rewardType].map((option, index) => (
+              <button
+                key={index}
+                className="reward-option-btn"
+                onClick={() => handleRewardSelection(option)}
+              >
+                {option}
+              </button>
+            ))
+          }
+          {rewardType === 'fastfood' && 
+            foodOptions.fastfood.map((option, index) => (
+              <button
+                key={index}
+                className="reward-option-btn fastfood"
+                onClick={() => handleRewardSelection(option.name)}
+              >
+                {option.name}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  );
+
+  // Receipt Modal
+  const ReceiptModal = () => (
+    <div className="receipt-overlay">
+      <div className="receipt-card" id="receipt-content">
+        <div className="receipt-header">
+          <div className="receipt-icon">💝</div>
+          <h2>Love Date Receipt</h2>
+          <p className="receipt-date">{new Date(receiptData?.date).toLocaleString()}</p>
+        </div>
+        
+        <div className="receipt-body">
+          <div className="receipt-section">
+            <p><strong>💕 For:</strong> {receiptData?.playerName}</p>
+            <p><strong>🎮 Game Mode:</strong> {receiptData?.difficulty?.toUpperCase()}</p>
+            <p><strong>⏱️ Completion Time:</strong> {formatTime(receiptData?.time)}</p>
+          </div>
+          
+          <div className="receipt-divider">━━━━━━━━━━━━━━━━</div>
+          
+          <div className="receipt-reward">
+            <p><strong>🎁 Your Reward:</strong></p>
+            <div className="reward-box">
+              <span className="reward-emoji-large">
+                {receiptData?.type === 'junkfood' && '🍟'}
+                {receiptData?.type === 'drinks' && '🥤'}
+                {receiptData?.type === 'sweets' && '🍰'}
+                {receiptData?.type === 'fastfood' && '🍔'}
+              </span>
+              <span className="reward-text">{receiptData?.selection}</span>
+            </div>
+          </div>
+          
+          <div className="receipt-divider">━━━━━━━━━━━━━━━━</div>
+          
+          <div className="receipt-message">
+            <p>✨ You deserve this treat! ✨</p>
+            <p>💖 Love, Brian 💖</p>
+          </div>
+        </div>
+        
+        <div className="receipt-footer">
+          <button className="print-btn" onClick={printReceipt}>
+            🖨️ Print Receipt
+          </button>
+          <button className="close-receipt-btn" onClick={() => setShowReceipt(false)}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Victory Modal with reward info
+  const VictoryModal = () => {
+    const pointsEarned = { easy: 100, medium: 200, hard: 300, expert: 500 }[difficulty];
+    const bonusPoints = (mistakes === 0 ? 100 : 0) + (timer < 300 ? 50 : 0);
+    const beatBrian = timer < brianRecords[difficulty].time;
+    const earnedReward = (difficulty === 'easy' && timer <= 240) ||
+                         (difficulty === 'medium' && timer <= 480) ||
+                         difficulty === 'hard' ||
+                         difficulty === 'expert';
+    
+    return (
+      <div className="victory-overlay" onClick={() => setShowVictory(false)}>
+        <div className="victory-card" onClick={(e) => e.stopPropagation()}>
+          <div className="victory-icon">🎉</div>
+          <h2>Congratulations, {playerStats.name}! 💕</h2>
+          <p>You solved the puzzle!</p>
+          
+          <div className="victory-stats">
+            <div>⏱️ {formatTime(timer)}</div>
+            <div>❌ {mistakes}/{maxMistakes}</div>
+            <div>🎯 {difficulty}</div>
+            
+            {beatBrian && (
+              <div className="beat-brian-alert">
+                🎉 Beat Brian's record! +200 🎉
+              </div>
+            )}
+            
+            {earnedReward && (
+              <div className="reward-alert">
+                🎁 You earned a special reward! 🎁
+              </div>
+            )}
+          </div>
+          
+          <div className="victory-buttons">
+            <button className="victory-btn" onClick={newGameHandler}>New Game</button>
+            <button className="victory-btn secondary" onClick={() => setShowVictory(false)}>Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const GameOverModal = () => (
+    <div className="victory-overlay" onClick={() => setGameStatus('playing')}>
+      <div className="victory-card gameover-card" onClick={(e) => e.stopPropagation()}>
+        <div className="victory-icon">💀</div>
+        <h2>Game Over!</h2>
+        <p>{maxMistakes} mistakes made</p>
+        <div className="victory-stats">
+          <div>⏱️ {formatTime(timer)}</div>
+          <div>🎯 {difficulty}</div>
+          <div>🔥 Streak ended at {streak}</div>
+        </div>
+        <div className="victory-buttons">
+          <button className="victory-btn" onClick={newGameHandler}>Try Again</button>
+          <button className="victory-btn secondary" onClick={resetGameHandler}>Reset</button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!board) {
     return (
       <div className="sudoku-container">
@@ -763,7 +1125,7 @@ function Sudoku({ onBack, currentPlayer }) {
     <div className="sudoku-container">
       <div className="sudoku-header">
         <button className="back-button" onClick={onBack}>←</button>
-        <h1 className="sudoku-title">Sudoku</h1>
+        <h1 className="sudoku-title">Sudoku 💕</h1>
         <button className="menu-button" onClick={handleMenuClick}>
           ☰
         </button>
@@ -800,8 +1162,19 @@ function Sudoku({ onBack, currentPlayer }) {
             onClick={() => setDifficulty(level)}
           >
             {level.charAt(0).toUpperCase() + level.slice(1)}
+            {level === 'easy' && ' 🍟'}
+            {level === 'medium' && ' 🥤'}
+            {level === 'hard' && ' 🍰'}
+            {level === 'expert' && ' 🍔'}
           </button>
         ))}
+      </div>
+
+      <div className="rewards-info">
+        <div className="reward-badge easy-reward">🍟 Easy &lt;4min</div>
+        <div className="reward-badge medium-reward">🥤 Medium &lt;8min</div>
+        <div className="reward-badge hard-reward">🍰 Hard Complete</div>
+        <div className="reward-badge expert-reward">🍔 Expert Complete</div>
       </div>
 
       <div className="notes-toggle">
@@ -869,152 +1242,113 @@ function Sudoku({ onBack, currentPlayer }) {
         </button>
       </div>
 
-      {/* Mobile Menu Overlay - Inline rendering */}
-      {showMobileMenu && (
-        <div className="mobile-menu-overlay" onClick={handleMenuClose}>
-          <div className="mobile-menu-content" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-menu-header">
-              <h3>Menu</h3>
-              <button className="close-menu" onClick={handleMenuClose}>✕</button>
-            </div>
-            <div className="mobile-menu-items">
-              <button className="mobile-menu-item" onClick={newGameHandler}>
-                <span>🎮</span> New Game
-              </button>
-              <button className="mobile-menu-item" onClick={resetGameHandler}>
-                <span>🔄</span> Reset Game
-              </button>
-              <button className="mobile-menu-item" onClick={handleLeaderboardClick}>
-                <span>🏆</span> Leaderboard
-              </button>
-              <button className="mobile-menu-item" onClick={refreshChallengesHandler}>
-                <span>🎯</span> Refresh Challenges
-              </button>
-              <button className="mobile-menu-item" onClick={backHandler}>
-                <span>←</span> Back to Love Letter
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Leaderboard Modal - Inline rendering */}
-      {showLeaderboard && (
-        <div className="leaderboard-overlay" onClick={handleLeaderboardClose}>
-          <div className="leaderboard-card" onClick={(e) => e.stopPropagation()}>
-            <div className="leaderboard-header">
-              <h2>🏆 Champions 🏆</h2>
-              <button className="close-leaderboard" onClick={handleLeaderboardClose}>✕</button>
-            </div>
-            
-            <div className="player-stats-summary">
-              <div className="stat-card">
-                <div className="stat-icon">👤</div>
-                <div className="stat-info">
-                  <div className="stat-label">Player</div>
-                  <div className="stat-value">{playerStats.name}</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">🏆</div>
-                <div className="stat-info">
-                  <div className="stat-label">Wins</div>
-                  <div className="stat-value">{playerStats.wins}</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">⭐</div>
-                <div className="stat-info">
-                  <div className="stat-label">Points</div>
-                  <div className="stat-value">{playerStats.totalPoints}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="difficulty-selector-compact">
-              {['easy', 'medium', 'hard', 'expert'].map(diff => (
-                <div key={diff} className="compact-difficulty">
-                  <div className="compact-title">{diff.charAt(0).toUpperCase() + diff.slice(1)}</div>
-                  {leaderboard.filter(entry => entry.difficulty === diff).slice(0, 3).map((entry, idx) => (
-                    <div key={entry.id} className={`compact-entry ${entry.isBrian ? 'brian-entry' : ''}`}>
-                      <div className="compact-rank">{idx + 1}</div>
-                      <div className="compact-name">{entry.name}</div>
-                      <div className="compact-time">{formatTime(entry.time)}</div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-            
-            <div className="brian-info">
-              <div className="brian-badge">
-                <span>⭐</span>
-                <span>Beat Brian: {formatTime(brianRecords[difficulty].time)}</span>
-                <span>🎯</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showVictory && gameStatus === 'won' && (
-        <div className="victory-overlay" onClick={() => setShowVictory(false)}>
-          <div className="victory-card" onClick={(e) => e.stopPropagation()}>
-            <div className="victory-icon">🎉</div>
-            <h2>Congratulations!</h2>
-            <p>You solved the puzzle!</p>
-            
-            <div className="victory-stats">
-              <div>⏱️ {formatTime(timer)}</div>
-              <div>❌ {mistakes}/{maxMistakes}</div>
-              <div>🎯 {difficulty}</div>
-              
-              {timer < brianRecords[difficulty].time && (
-                <div className="beat-brian-alert">
-                  🎉 Beat Brian's record! +200 🎉
-                </div>
-              )}
-            </div>
-            
-            <div className="victory-buttons">
-              <button className="victory-btn" onClick={newGameHandler}>New Game</button>
-              <button className="victory-btn secondary" onClick={() => setShowVictory(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {gameStatus === 'lost' && (
-        <div className="victory-overlay" onClick={() => setGameStatus('playing')}>
-          <div className="victory-card gameover-card" onClick={(e) => e.stopPropagation()}>
-            <div className="victory-icon">💀</div>
-            <h2>Game Over!</h2>
-            <p>{maxMistakes} mistakes made</p>
-            <div className="victory-stats">
-              <div>⏱️ {formatTime(timer)}</div>
-              <div>🎯 {difficulty}</div>
-              <div>🔥 Streak ended at {streak}</div>
-            </div>
-            <div className="victory-buttons">
-              <button className="victory-btn" onClick={newGameHandler}>Try Again</button>
-              <button className="victory-btn secondary" onClick={resetGameHandler}>Reset</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRewards && currentReward && (
-        <div className="reward-popup">
-          <div className="reward-content">
-            <div className="reward-icon">{currentReward?.icon}</div>
-            <h3>Challenge Complete!</h3>
-            <p className="reward-name">{currentReward?.name}</p>
-            <p className="reward-points">+{currentReward?.points} pts</p>
-          </div>
-        </div>
-      )}
+      {showVictory && gameStatus === 'won' && <VictoryModal />}
+      {gameStatus === 'lost' && <GameOverModal />}
+      {showRewards && currentReward && <RewardPopup />}
+      {showLeaderboard && <LeaderboardModal />}
+      {showMobileMenu && <MobileMenu />}
+      {showRewardSelection && <RewardSelectionModal />}
+      {showReceipt && <ReceiptModal />}
     </div>
   );
 }
+
+// Helper Components
+const RewardPopup = ({ currentReward }) => (
+  <div className="reward-popup">
+    <div className="reward-content">
+      <div className="reward-icon">{currentReward?.icon}</div>
+      <h3>Challenge Complete!</h3>
+      <p className="reward-name">{currentReward?.name}</p>
+      <p className="reward-points">+{currentReward?.points} pts</p>
+    </div>
+  </div>
+);
+
+const LeaderboardModal = ({ leaderboard, playerStats, difficulty, formatTime, brianRecords, closeLeaderboard }) => (
+  <div className="leaderboard-overlay" onClick={closeLeaderboard}>
+    <div className="leaderboard-card" onClick={(e) => e.stopPropagation()}>
+      <div className="leaderboard-header">
+        <h2>🏆 Champions 🏆</h2>
+        <button className="close-leaderboard" onClick={closeLeaderboard}>✕</button>
+      </div>
+      
+      <div className="player-stats-summary">
+        <div className="stat-card">
+          <div className="stat-icon">👤</div>
+          <div className="stat-info">
+            <div className="stat-label">Player</div>
+            <div className="stat-value">{playerStats.name}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">🏆</div>
+          <div className="stat-info">
+            <div className="stat-label">Wins</div>
+            <div className="stat-value">{playerStats.wins}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">⭐</div>
+          <div className="stat-info">
+            <div className="stat-label">Points</div>
+            <div className="stat-value">{playerStats.totalPoints}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="difficulty-selector-compact">
+        {['easy', 'medium', 'hard', 'expert'].map(diff => (
+          <div key={diff} className="compact-difficulty">
+            <div className="compact-title">{diff.charAt(0).toUpperCase() + diff.slice(1)}</div>
+            {leaderboard.filter(entry => entry.difficulty === diff).slice(0, 3).map((entry, idx) => (
+              <div key={entry.id} className={`compact-entry ${entry.isBrian ? 'brian-entry' : ''}`}>
+                <div className="compact-rank">{idx + 1}</div>
+                <div className="compact-name">{entry.name}</div>
+                <div className="compact-time">{formatTime(entry.time)}</div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      
+      <div className="brian-info">
+        <div className="brian-badge">
+          <span>⭐</span>
+          <span>Beat Brian: {formatTime(brianRecords[difficulty].time)}</span>
+          <span>🎯</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const MobileMenu = ({ newGameHandler, resetGameHandler, handleLeaderboardClick, refreshChallengesHandler, backHandler, closeMenu }) => (
+  <div className="mobile-menu-overlay" onClick={closeMenu}>
+    <div className="mobile-menu-content" onClick={(e) => e.stopPropagation()}>
+      <div className="mobile-menu-header">
+        <h3>Menu</h3>
+        <button className="close-menu" onClick={closeMenu}>✕</button>
+      </div>
+      <div className="mobile-menu-items">
+        <button className="mobile-menu-item" onClick={newGameHandler}>
+          <span>🎮</span> New Game
+        </button>
+        <button className="mobile-menu-item" onClick={resetGameHandler}>
+          <span>🔄</span> Reset Game
+        </button>
+        <button className="mobile-menu-item" onClick={handleLeaderboardClick}>
+          <span>🏆</span> Leaderboard
+        </button>
+        <button className="mobile-menu-item" onClick={refreshChallengesHandler}>
+          <span>🎯</span> Refresh Challenges
+        </button>
+        <button className="mobile-menu-item" onClick={backHandler}>
+          <span>←</span> Back to Love Letter
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export default Sudoku;

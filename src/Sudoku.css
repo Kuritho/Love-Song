@@ -711,3 +711,268 @@
     font-size: 16px;
   }
 }
+
+/* Reward Selection Modal */
+.reward-selection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.reward-selection-card {
+  background: linear-gradient(135deg, #fff5f5, #ffe4ea);
+  border-radius: 30px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+.reward-header .reward-emoji {
+  font-size: 60px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.reward-header h2 {
+  color: #ff3366;
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.reward-message {
+  margin: 20px 0;
+}
+
+.reward-message p {
+  color: #666;
+  font-size: 16px;
+  margin: 10px 0;
+}
+
+.reward-question {
+  font-weight: bold;
+  color: #ff3366;
+  font-size: 18px;
+}
+
+.reward-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.reward-option-btn {
+  padding: 12px;
+  border: none;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  background: white;
+  color: #764ba2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reward-option-btn.fastfood {
+  background: linear-gradient(135deg, #ff6b9d, #ff3366);
+  color: white;
+}
+
+.reward-option-btn:active {
+  transform: scale(0.95);
+}
+
+/* Receipt Modal */
+.receipt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.receipt-card {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 350px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
+}
+
+.receipt-header {
+  text-align: center;
+  border-bottom: 2px dashed #ff6b9d;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.receipt-icon {
+  font-size: 40px;
+}
+
+.receipt-header h2 {
+  color: #ff3366;
+  margin: 10px 0 5px;
+  font-size: 20px;
+}
+
+.receipt-date {
+  color: #999;
+  font-size: 11px;
+  margin: 0;
+}
+
+.receipt-body {
+  margin: 20px 0;
+}
+
+.receipt-section p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #333;
+}
+
+.receipt-divider {
+  text-align: center;
+  color: #ccc;
+  margin: 15px 0;
+  font-size: 12px;
+}
+
+.receipt-reward {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.receipt-reward p {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.reward-box {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.reward-emoji-large {
+  font-size: 40px;
+}
+
+.reward-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ff3366;
+}
+
+.receipt-message {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.receipt-message p {
+  margin: 5px 0;
+  font-style: italic;
+  color: #666;
+}
+
+.receipt-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.print-btn, .close-receipt-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.print-btn {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+}
+
+.close-receipt-btn {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.print-btn:active, .close-receipt-btn:active {
+  transform: scale(0.95);
+}
+
+/* Rewards Info Bar */
+.rewards-info {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.reward-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(5px);
+}
+
+.easy-reward {
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+}
+
+.medium-reward {
+  background: linear-gradient(135deg, #2196f3, #03a9f4);
+}
+
+.hard-reward {
+  background: linear-gradient(135deg, #9c27b0, #e91e63);
+}
+
+.expert-reward {
+  background: linear-gradient(135deg, #f44336, #ff9800);
+}
+
+/* Reward Alert in Victory */
+.reward-alert {
+  background: linear-gradient(135deg, #ffd700, #ffb347);
+  padding: 8px;
+  border-radius: 10px;
+  font-weight: bold;
+  margin-top: 10px;
+  animation: pulse 0.5s ease;
+  color: white;
+}

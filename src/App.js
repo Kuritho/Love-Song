@@ -5,6 +5,7 @@ import PhotosGallery from './PhotosGallery';
 import VideosGallery from './VideosGallery';
 import FlappyLoveBird from './FlappyLoveBird';
 import Sudoku from './Sudoku';
+import Pacman from './Pacman';
 
 function App() {
   const [currentView, setCurrentView] = useState('main');
@@ -14,6 +15,7 @@ function App() {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [showGame, setShowGame] = useState(false);
   const [showSudoku, setShowSudoku] = useState(false);
+  const [showPacman, setShowPacman] = useState(false);
 
   const monthContent = {
     1: {
@@ -143,6 +145,10 @@ function App() {
     
     if (showSudoku) {
       return <Sudoku onBack={() => setShowSudoku(false)} />;
+    }
+    
+    if (showPacman) {
+      return <Pacman onBack={() => setShowPacman(false)} />;
     }
 
     switch (currentView) {
@@ -441,6 +447,24 @@ function App() {
                     <span className="btn-description">Challenge Your Mind</span>
                   </div>
                   <div className="btn-badge">🧩</div>
+                </button>
+
+                {/* Pacman Game Button */}
+                <button 
+                  className={`action-btn pacman-btn-redesign ${hoveredButton === 'pacman' ? 'hovered' : ''}`}
+                  onClick={() => setShowPacman(true)}
+                  onMouseEnter={() => setHoveredButton('pacman')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                >
+                  <div className="btn-icon-wrapper">
+                    <span className="btn-icon-large">🟡</span>
+                    <div className="btn-shine"></div>
+                  </div>
+                  <div className="btn-content">
+                    <span className="btn-title">Pacman</span>
+                    <span className="btn-description">Classic Arcade Game</span>
+                  </div>
+                  <div className="btn-badge">👻</div>
                 </button>
               </div>
 
