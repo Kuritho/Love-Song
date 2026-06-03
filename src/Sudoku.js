@@ -1,5 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Sudoku.css';
+import { 
+  addReward, 
+  getUserNotifications, 
+  addLeaderboardEntry,
+  saveGameStats,
+  subscribeToNotifications,
+  getRewardsByUser,
+  getGlobalLeaderboard,
+  getGlobalStatistics,
+  subscribeToGlobalLeaderboard,
+  getPlayerBest,
+  getPlayerRank
+} from './firebase';
+import GlobalLeaderboard from './GlobalLeaderboard';
 
 function Sudoku({ onBack, currentPlayer }) {
   const [board, setBoard] = useState(null);
@@ -16,9 +30,10 @@ function Sudoku({ onBack, currentPlayer }) {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Menu state
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  // Menu state - Simplified
+  const [showMenu, setShowMenu] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
   
   // Romantic Food Rewards
   const [showRewardSelection, setShowRewardSelection] = useState(false);
@@ -27,6 +42,23 @@ function Sudoku({ onBack, currentPlayer }) {
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [allRewards, setAllRewards] = useState([]);
+  
+  // Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [pendingRewardStatus, setPendingRewardStatus] = useState(null);
+  
+  // Global stats state
+  const [globalStats, setGlobalStats] = useState(null);
+  const [playerRank, setPlayerRank] = useState(null);
+  const [playerBest, setPlayerBest] = useState(null);
+  
+  // Sync states
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [showSyncNotification, setShowSyncNotification] = useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+  const [showSyncError, setShowSyncError] = useState(false);
   
   // Food options
   const foodOptions = {
@@ -43,10 +75,10 @@ function Sudoku({ onBack, currentPlayer }) {
   };
   
   const timeLimits = {
-    easy: 240, // 4 minutes
-    medium: 480, // 8 minutes
-    hard: null, // no time limit, just completion
-    expert: null // no time limit, just completion
+    easy: 240,
+    medium: 480,
+    hard: null,
+    expert: null
   };
   
   // Challenge & Rewards States
@@ -156,33 +188,104 @@ function Sudoku({ onBack, currentPlayer }) {
     }
   };
 
-  // Initialize leaderboard with Brian's static records
-  const initializeLeaderboard = () => {
-    const savedLeaderboard = localStorage.getItem('sudokuLeaderboard');
-    if (savedLeaderboard) {
-      setLeaderboard(JSON.parse(savedLeaderboard));
-    } else {
-      const initialLeaderboard = [];
-      const difficulties = ['easy', 'medium', 'hard', 'expert'];
+  // Load synced cloud data on mount
+  useEffect(() => {
+    const loadCloudData = async () => {
+      const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
       
-      difficulties.forEach(diff => {
-        initialLeaderboard.push({
-          id: `brian-${diff}`,
-          name: 'Brian',
-          difficulty: diff,
-          time: brianRecords[diff].time,
-          perfectGames: brianRecords[diff].perfectGames,
-          wins: brianRecords[diff].wins,
-          totalPoints: brianRecords[diff].totalPoints,
-          isBrian: true,
-          date: new Date().toISOString()
-        });
-      });
+      const bestResult = await getPlayerBest(playerName);
+      if (bestResult.success && bestResult.data) {
+        const hasCloudData = Object.values(bestResult.data).some(v => v !== null);
+        if (hasCloudData) {
+          setPlayerBest(bestResult.data);
+          setShowSyncNotification(true);
+          setTimeout(() => setShowSyncNotification(false), 3000);
+        }
+      }
+    };
+    
+    loadCloudData();
+  }, [currentPlayer]);
+
+  // Load global stats and player ranking
+  useEffect(() => {
+    const loadGlobalData = async () => {
+      const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
       
-      setLeaderboard(initialLeaderboard);
-      localStorage.setItem('sudokuLeaderboard', JSON.stringify(initialLeaderboard));
-    }
-  };
+      const statsResult = await getGlobalStatistics();
+      if (statsResult.success) {
+        setGlobalStats(statsResult.data);
+      }
+      
+      const bestResult = await getPlayerBest(playerName);
+      if (bestResult.success) {
+        setPlayerBest(bestResult.data);
+      }
+      
+      const rankResult = await getPlayerRank(playerName, difficulty);
+      if (rankResult.success && rankResult.data) {
+        setPlayerRank(rankResult.data);
+      }
+    };
+    
+    loadGlobalData();
+  }, [currentPlayer, difficulty]);
+
+  // Load notifications from Firebase
+  useEffect(() => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    
+    const loadNotifications = async () => {
+      const result = await getUserNotifications(playerName);
+      if (result.success) {
+        setNotifications(result.data);
+      }
+    };
+    
+    loadNotifications();
+    
+    const unsubscribe = subscribeToNotifications(playerName, (newNotifications) => {
+      setNotifications(newNotifications);
+    });
+    
+    return () => unsubscribe();
+  }, [currentPlayer]);
+
+  // Load user rewards from Firebase
+  useEffect(() => {
+    const loadUserRewards = async () => {
+      const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+      const result = await getRewardsByUser(playerName);
+      if (result.success) {
+        setAllRewards(result.data);
+      }
+    };
+    loadUserRewards();
+  }, [currentPlayer]);
+
+  // Initialize leaderboard and load data
+  useEffect(() => {
+    const savedPoints = localStorage.getItem('sudokuTotalPoints');
+    const savedRewards = localStorage.getItem('sudokuRewards');
+    const savedCompletedChallenges = localStorage.getItem('sudokuCompletedChallenges');
+    const savedStreak = localStorage.getItem('sudokuStreak');
+    
+    if (savedPoints) setTotalPoints(parseInt(savedPoints));
+    if (savedRewards) setRewards(JSON.parse(savedRewards));
+    if (savedCompletedChallenges) setCompletedChallenges(JSON.parse(savedCompletedChallenges));
+    if (savedStreak) setStreak(parseInt(savedStreak));
+    
+    loadPlayerStats();
+    generateDailyChallenges();
+  }, []);
+
+  // Save data to localStorage
+  useEffect(() => {
+    localStorage.setItem('sudokuTotalPoints', totalPoints);
+    localStorage.setItem('sudokuRewards', JSON.stringify(rewards));
+    localStorage.setItem('sudokuCompletedChallenges', JSON.stringify(completedChallenges));
+    localStorage.setItem('sudokuStreak', streak);
+  }, [totalPoints, rewards, completedChallenges, streak]);
 
   // Load player stats
   const loadPlayerStats = () => {
@@ -201,201 +304,98 @@ function Sudoku({ onBack, currentPlayer }) {
         totalPoints: 0
       });
     }
-    
-    // Load saved rewards
-    const savedRewards = localStorage.getItem(`sudokuFoodRewards_${playerName}`);
-    if (savedRewards) {
-      setAllRewards(JSON.parse(savedRewards));
+  };
+
+  // Save player stats
+  const savePlayerStats = (newStats) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    localStorage.setItem(`sudokuPlayerStats_${playerName}`, JSON.stringify(newStats));
+    setPlayerStats(newStats);
+  };
+
+  // Manual sync function
+  const manualSync = async () => {
+    setIsSyncing(true);
+    try {
+      const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+      
+      await addLeaderboardEntry({
+        name: playerName,
+        difficulty: difficulty,
+        time: playerStats.bestTime || 999,
+        mistakes: 0,
+        perfectGame: true,
+        totalPoints: playerStats.totalPoints
+      });
+      
+      setLastSyncTime(new Date());
+      setShowSyncSuccess(true);
+      setTimeout(() => setShowSyncSuccess(false), 3000);
+    } catch (error) {
+      console.error('Sync error:', error);
+      setShowSyncError(true);
+      setTimeout(() => setShowSyncError(false), 3000);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
-  // Save rewards
-  const saveReward = (reward) => {
+  // Save rewards with Firebase
+  const saveReward = async (reward) => {
     const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
-    const newRewards = [...allRewards, reward];
-    setAllRewards(newRewards);
-    localStorage.setItem(`sudokuFoodRewards_${playerName}`, JSON.stringify(newRewards));
-  };
-
-  // Check and handle romantic food rewards
-  const checkRomanticReward = (difficulty, completionTime) => {
-    let rewardEarned = null;
-    
-    switch (difficulty) {
-      case 'easy':
-        if (completionTime <= timeLimits.easy) {
-          rewardEarned = {
-            type: 'junkfood',
-            message: '🎉 You completed Easy mode under 4 minutes! 🎉\nChoose your favorite junkfood!',
-            options: foodOptions.junkfood,
-            emoji: '🍟'
-          };
-          setRewardType('junkfood');
-          setShowRewardSelection(true);
-        }
-        break;
-      case 'medium':
-        if (completionTime <= timeLimits.medium) {
-          rewardEarned = {
-            type: 'drinks',
-            message: '🎉 You completed Medium mode under 8 minutes! 🎉\nChoose your favorite drink!',
-            options: foodOptions.drinks,
-            emoji: '🥤'
-          };
-          setRewardType('drinks');
-          setShowRewardSelection(true);
-        }
-        break;
-      case 'hard':
-        rewardEarned = {
-          type: 'sweets',
-          message: '🎉 You completed Hard mode! 🎉\nChoose your favorite sweet treat!',
-          options: foodOptions.sweets,
-          emoji: '🍰'
-        };
-        setRewardType('sweets');
-        setShowRewardSelection(true);
-        break;
-      case 'expert':
-        rewardEarned = {
-          type: 'fastfood',
-          message: '🎉🎉🎉 AMAZING! You completed EXPERT mode! 🎉🎉🎉\nChoose your favorite fastfood restaurant!',
-          options: foodOptions.fastfood,
-          emoji: '🍔'
-        };
-        setRewardType('fastfood');
-        setShowRewardSelection(true);
-        break;
-      default:
-        break;
-    }
-    
-    return rewardEarned;
-  };
-
-  // Handle reward selection
-  const handleRewardSelection = (selected) => {
-    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
-    const reward = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      difficulty: difficulty,
-      time: timer,
-      type: rewardType,
-      selection: selected,
-      playerName: playerName
+    const rewardWithStatus = {
+      ...reward,
+      status: 'pending',
+      playerName: playerName,
     };
     
-    saveReward(reward);
-    setSelectedReward(selected);
-    setReceiptData(reward);
-    setShowRewardSelection(false);
-    setShowReceipt(true);
-    
-    if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
+    const result = await addReward(rewardWithStatus);
+    if (result.success) {
+      setPendingRewardStatus('pending');
+      setTimeout(() => setPendingRewardStatus(null), 3000);
+      
+      const newRewards = [...allRewards, { ...rewardWithStatus, id: result.id }];
+      setAllRewards(newRewards);
+      localStorage.setItem(`sudokuFoodRewards_${playerName}`, JSON.stringify(newRewards));
+    }
   };
 
-  // Print receipt
-  const printReceipt = () => {
-    const printContent = document.getElementById('receipt-content');
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Love Date Receipt</title>
-          <style>
-            body {
-              font-family: 'Courier New', monospace;
-              padding: 20px;
-              background: #fff;
-            }
-            .receipt {
-              max-width: 300px;
-              margin: 0 auto;
-              border: 2px dashed #ff6b9d;
-              padding: 20px;
-              border-radius: 10px;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 1px dashed #ccc;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-            }
-            .header h1 {
-              color: #ff3366;
-              margin: 0;
-              font-size: 20px;
-            }
-            .header p {
-              color: #666;
-              margin: 5px 0;
-            }
-            .content {
-              margin: 15px 0;
-            }
-            .reward-item {
-              background: #f9f9f9;
-              padding: 10px;
-              margin: 10px 0;
-              border-radius: 5px;
-            }
-            .footer {
-              text-align: center;
-              border-top: 1px dashed #ccc;
-              padding-top: 10px;
-              margin-top: 15px;
-              font-size: 12px;
-              color: #666;
-            }
-            .thankyou {
-              text-align: center;
-              color: #ff3366;
-              font-weight: bold;
-              margin-top: 15px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            ${document.getElementById('receipt-content').innerHTML}
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 500);
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+  // Update leaderboard with Firebase
+  const updateLeaderboard = async (gameData) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    
+    const entry = {
+      name: playerName,
+      difficulty: difficulty,
+      time: timer,
+      mistakes: mistakes,
+      perfectGame: mistakes === 0,
+      totalPoints: gameData.pointsEarned
+    };
+    
+    const result = await addLeaderboardEntry(entry);
+    
+    if (result.success && result.updated) {
+      const rankResult = await getPlayerRank(playerName, difficulty);
+      if (rankResult.success && rankResult.data) {
+        setPlayerRank(rankResult.data);
+      }
+      
+      const statsResult = await getGlobalStatistics();
+      if (statsResult.success) {
+        setGlobalStats(statsResult.data);
+      }
+    }
+    
+    await saveGameStats({
+      playerName: playerName,
+      difficulty: difficulty,
+      time: timer,
+      mistakes: mistakes,
+      pointsEarned: gameData.pointsEarned,
+      perfectGame: mistakes === 0
+    });
   };
-
-  // Initialize leaderboard and load data
-  useEffect(() => {
-    const savedPoints = localStorage.getItem('sudokuTotalPoints');
-    const savedRewards = localStorage.getItem('sudokuRewards');
-    const savedCompletedChallenges = localStorage.getItem('sudokuCompletedChallenges');
-    const savedStreak = localStorage.getItem('sudokuStreak');
-    
-    if (savedPoints) setTotalPoints(parseInt(savedPoints));
-    if (savedRewards) setRewards(JSON.parse(savedRewards));
-    if (savedCompletedChallenges) setCompletedChallenges(JSON.parse(savedCompletedChallenges));
-    if (savedStreak) setStreak(parseInt(savedStreak));
-    
-    initializeLeaderboard();
-    loadPlayerStats();
-    generateDailyChallenges();
-  }, []);
-
-  // Save data to localStorage
-  useEffect(() => {
-    localStorage.setItem('sudokuTotalPoints', totalPoints);
-    localStorage.setItem('sudokuRewards', JSON.stringify(rewards));
-    localStorage.setItem('sudokuCompletedChallenges', JSON.stringify(completedChallenges));
-    localStorage.setItem('sudokuStreak', streak);
-  }, [totalPoints, rewards, completedChallenges, streak]);
 
   const generateDailyChallenges = () => {
     const challengeList = Object.values(challenges);
@@ -635,7 +635,6 @@ function Sudoku({ onBack, currentPlayer }) {
       checkChallenges(gameStats);
       setTotalPoints(prev => prev + totalEarned);
       
-      // Check for romantic food reward
       checkRomanticReward(difficulty, timer);
       
       setGameStatus('won');
@@ -657,6 +656,88 @@ function Sudoku({ onBack, currentPlayer }) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Check and handle romantic food rewards
+  const checkRomanticReward = (difficulty, completionTime) => {
+    switch (difficulty) {
+      case 'easy':
+        if (completionTime <= timeLimits.easy) {
+          setRewardType('junkfood');
+          setShowRewardSelection(true);
+        }
+        break;
+      case 'medium':
+        if (completionTime <= timeLimits.medium) {
+          setRewardType('drinks');
+          setShowRewardSelection(true);
+        }
+        break;
+      case 'hard':
+        setRewardType('sweets');
+        setShowRewardSelection(true);
+        break;
+      case 'expert':
+        setRewardType('fastfood');
+        setShowRewardSelection(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle reward selection
+  const handleRewardSelection = (selected) => {
+    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
+    const reward = {
+      date: new Date().toISOString(),
+      difficulty: difficulty,
+      time: timer,
+      type: rewardType,
+      selection: selected,
+      playerName: playerName
+    };
+    
+    saveReward(reward);
+    setSelectedReward(selected);
+    setReceiptData(reward);
+    setShowRewardSelection(false);
+    setShowReceipt(true);
+    
+    if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
+  };
+
+  // Print receipt
+  const printReceipt = () => {
+    const printContent = document.getElementById('receipt-content');
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Love Date Receipt</title>
+          <style>
+            body { font-family: 'Courier New', monospace; padding: 20px; background: #fff; }
+            .receipt { max-width: 300px; margin: 0 auto; border: 2px dashed #ff6b9d; padding: 20px; border-radius: 10px; }
+            .header { text-align: center; border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 15px; }
+            .header h1 { color: #ff3366; margin: 0; font-size: 20px; }
+            .header p { color: #666; margin: 5px 0; }
+            .content { margin: 15px 0; }
+            .reward-item { background: #f9f9f9; padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .footer { text-align: center; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 15px; font-size: 12px; color: #666; }
+            .thankyou { text-align: center; color: #ff3366; font-weight: bold; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            ${document.getElementById('receipt-content').innerHTML}
+          </div>
+          <script>
+            window.onload = function() { window.print(); setTimeout(() => window.close(), 500); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleCellClick = (row, col) => {
@@ -785,99 +866,28 @@ function Sudoku({ onBack, currentPlayer }) {
     }
   };
 
-  // Save player stats
-  const savePlayerStats = (newStats) => {
-    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
-    localStorage.setItem(`sudokuPlayerStats_${playerName}`, JSON.stringify(newStats));
-    setPlayerStats(newStats);
+  // Menu functions
+  const openMenu = () => {
+    setShowMenu(true);
   };
 
-  // Update leaderboard with new score
-  const updateLeaderboard = (gameData) => {
-    const playerName = currentPlayer || localStorage.getItem('flappyLovePlayerName') || 'Player';
-    
-    const newEntry = {
-      id: `${playerName}-${difficulty}-${Date.now()}`,
-      name: playerName,
-      difficulty: difficulty,
-      time: timer,
-      mistakes: mistakes,
-      hintsUsed: 3 - hintsLeft,
-      perfectGame: mistakes === 0,
-      totalPoints: gameData.pointsEarned,
-      date: new Date().toISOString(),
-      isBrian: false
-    };
-    
-    const existingIndex = leaderboard.findIndex(
-      entry => entry.name === playerName && entry.difficulty === difficulty && !entry.isBrian
-    );
-    
-    let newLeaderboard;
-    if (existingIndex !== -1) {
-      if (timer < leaderboard[existingIndex].time) {
-        newLeaderboard = [...leaderboard];
-        newLeaderboard[existingIndex] = newEntry;
-      } else {
-        newLeaderboard = [...leaderboard];
-      }
-    } else {
-      newLeaderboard = [...leaderboard, newEntry];
-    }
-    
-    newLeaderboard.sort((a, b) => {
-      if (a.difficulty !== b.difficulty) {
-        const diffOrder = { easy: 1, medium: 2, hard: 3, expert: 4 };
-        return diffOrder[a.difficulty] - diffOrder[b.difficulty];
-      }
-      return a.time - b.time;
-    });
-    
-    const filteredLeaderboard = [];
-    const difficulties = ['easy', 'medium', 'hard', 'expert'];
-    difficulties.forEach(diff => {
-      const diffEntries = newLeaderboard.filter(entry => entry.difficulty === diff);
-      filteredLeaderboard.push(...diffEntries.slice(0, 10));
-    });
-    
-    setLeaderboard(filteredLeaderboard);
-    localStorage.setItem('sudokuLeaderboard', JSON.stringify(filteredLeaderboard));
+  const closeMenu = () => {
+    setShowMenu(false);
   };
 
-  // Simple menu handlers
-  const handleMenuClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowMobileMenu(!showMobileMenu);
+  const handleLeaderboardClick = () => {
+    setShowLeaderboard(true);
+    closeMenu();
   };
 
-  const handleMenuClose = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setShowMobileMenu(false);
-  };
-
-  const handleLeaderboardClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowLeaderboard(!showLeaderboard);
-    setShowMobileMenu(false);
-  };
-
-  const handleLeaderboardClose = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+  const handleLeaderboardClose = () => {
     setShowLeaderboard(false);
   };
 
   const newGameHandler = () => {
     initializeGame();
     generateDailyChallenges();
-    setShowMobileMenu(false);
+    closeMenu();
     if (window.navigator.vibrate) window.navigator.vibrate(50);
   };
 
@@ -890,18 +900,18 @@ function Sudoku({ onBack, currentPlayer }) {
       setGameStatus('playing');
       setSelectedCell(null);
       setShowVictory(false);
-      setShowMobileMenu(false);
+      closeMenu();
       if (window.navigator.vibrate) window.navigator.vibrate(50);
     }
   };
 
   const refreshChallengesHandler = () => {
     generateDailyChallenges();
-    setShowMobileMenu(false);
+    closeMenu();
   };
 
   const backHandler = () => {
-    setShowMobileMenu(false);
+    closeMenu();
     onBack();
   };
 
@@ -937,35 +947,306 @@ function Sudoku({ onBack, currentPlayer }) {
     return classes;
   };
 
+  // Simple Menu Modal - No animations to prevent flickering
+  const SimpleMenu = () => {
+    if (!showMenu) return null;
+    
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'flex-end',
+      }} onClick={closeMenu}>
+        <div style={{
+          backgroundColor: 'white',
+          width: '100%',
+          borderRadius: '25px 25px 0 0',
+          padding: '20px',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            paddingBottom: '10px',
+            borderBottom: '2px solid #ff6b9d',
+          }}>
+            <h3 style={{ margin: 0, color: '#ff3366' }}>Menu ☁️</h3>
+            <button onClick={closeMenu} style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#999',
+            }}>✕</button>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button onClick={newGameHandler} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>🎮</span> New Game
+            </button>
+            
+            <button onClick={resetGameHandler} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>🔄</span> Reset Game
+            </button>
+            
+            <button onClick={handleLeaderboardClick} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>🏆</span> My Stats
+            </button>
+            
+            <button onClick={() => { setShowGlobalLeaderboard(true); closeMenu(); }} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>🌍</span> Global Leaderboard
+            </button>
+            
+            <button onClick={() => { manualSync(); closeMenu(); }} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>☁️</span> Sync to Cloud
+            </button>
+            
+            <button onClick={refreshChallengesHandler} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>🎯</span> Refresh Challenges
+            </button>
+            
+            <button onClick={backHandler} style={{
+              padding: '14px 16px',
+              border: 'none',
+              borderRadius: '15px',
+              fontSize: '16px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: '#f5f5f5',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <span>←</span> Back to Love Letter
+            </button>
+          </div>
+          
+          <div style={{
+            marginTop: '20px',
+            paddingTop: '15px',
+            textAlign: 'center',
+            borderTop: '1px solid #eee',
+          }}>
+            <p style={{ margin: 0, color: '#999', fontSize: '12px' }}>Brian & Jasmine ❤️</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Notification Panel Component
+  const NotificationPanel = () => {
+    if (!showNotifications) return null;
+    
+    return (
+      <>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9998,
+        }} onClick={() => setShowNotifications(false)} />
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          maxWidth: '350px',
+          background: 'white',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '-5px 0 20px rgba(0,0,0,0.2)',
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px',
+            background: 'linear-gradient(135deg, #ff6b9d, #ff3366)',
+            color: 'white',
+          }}>
+            <h3 style={{ margin: 0 }}>📬 Notifications ☁️</h3>
+            <button onClick={() => setShowNotifications(false)} style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              color: 'white',
+              cursor: 'pointer',
+            }}>✕</button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+            {notifications.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px' }}>
+                <span style={{ fontSize: '50px', display: 'block', marginBottom: '15px' }}>📭</span>
+                <p style={{ color: '#999' }}>No notifications yet</p>
+              </div>
+            ) : (
+              notifications.map(notif => (
+                <div key={notif.id} style={{
+                  padding: '15px',
+                  borderRadius: '15px',
+                  marginBottom: '10px',
+                  background: notif.read ? '#f5f5f5' : '#fff3e0',
+                  borderLeft: notif.read ? 'none' : '4px solid #ff9800',
+                }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '5px' }}>{notif.message}</div>
+                  <div style={{ fontSize: '11px', color: '#999' }}>
+                    {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString() : new Date(notif.createdAt).toLocaleString()}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </>
+    );
+  };
+
   // Reward Selection Modal
   const RewardSelectionModal = () => (
-    <div className="reward-selection-overlay">
-      <div className="reward-selection-card">
-        <div className="reward-header">
-          <span className="reward-emoji">
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.95)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #fff5f5, #ffe4ea)',
+        borderRadius: '30px',
+        padding: '30px',
+        maxWidth: '400px',
+        width: '90%',
+        textAlign: 'center',
+      }}>
+        <div>
+          <span style={{ fontSize: '60px', display: 'block', marginBottom: '10px' }}>
             {rewardType === 'junkfood' && '🍟'}
             {rewardType === 'drinks' && '🥤'}
             {rewardType === 'sweets' && '🍰'}
             {rewardType === 'fastfood' && '🍔'}
           </span>
-          <h2>Congratulations, {playerStats.name}! 💕</h2>
+          <h2 style={{ color: '#ff3366', fontSize: '24px', margin: '10px 0' }}>Congratulations, {playerStats.name}! 💕</h2>
         </div>
-        <div className="reward-message">
-          <p>
+        <div style={{ margin: '20px 0' }}>
+          <p style={{ color: '#666', fontSize: '16px', margin: '10px 0' }}>
             {rewardType === 'junkfood' && 'You completed Easy mode under 4 minutes! 🎉'}
             {rewardType === 'drinks' && 'You completed Medium mode under 8 minutes! 🎉'}
             {rewardType === 'sweets' && 'You completed Hard mode! 🎉'}
             {rewardType === 'fastfood' && 'AMAZING! You completed EXPERT mode! 🎉🎉🎉'}
           </p>
-          <p className="reward-question">Choose your reward:</p>
+          <p style={{ fontWeight: 'bold', color: '#ff3366', fontSize: '18px' }}>Choose your reward:</p>
         </div>
-        <div className="reward-options">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', margin: '20px 0' }}>
           {(rewardType === 'junkfood' || rewardType === 'drinks' || rewardType === 'sweets') && 
             foodOptions[rewardType].map((option, index) => (
               <button
                 key={index}
-                className="reward-option-btn"
                 onClick={() => handleRewardSelection(option)}
+                style={{
+                  padding: '12px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  background: 'white',
+                  color: '#764ba2',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
               >
                 {option}
               </button>
@@ -975,8 +1256,17 @@ function Sudoku({ onBack, currentPlayer }) {
             foodOptions.fastfood.map((option, index) => (
               <button
                 key={index}
-                className="reward-option-btn fastfood"
                 onClick={() => handleRewardSelection(option.name)}
+                style={{
+                  padding: '12px',
+                  border: 'none',
+                  borderRadius: '15px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #ff6b9d, #ff3366)',
+                  color: 'white',
+                }}
               >
                 {option.name}
               </button>
@@ -989,60 +1279,92 @@ function Sudoku({ onBack, currentPlayer }) {
 
   // Receipt Modal
   const ReceiptModal = () => (
-    <div className="receipt-overlay">
-      <div className="receipt-card" id="receipt-content">
-        <div className="receipt-header">
-          <div className="receipt-icon">💝</div>
-          <h2>Love Date Receipt</h2>
-          <p className="receipt-date">{new Date(receiptData?.date).toLocaleString()}</p>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.95)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        padding: '25px',
+        maxWidth: '350px',
+        width: '90%',
+        fontFamily: "'Courier New', monospace",
+      }} id="receipt-content">
+        <div style={{ textAlign: 'center', borderBottom: '2px dashed #ff6b9d', paddingBottom: '15px', marginBottom: '15px' }}>
+          <div style={{ fontSize: '40px' }}>💝</div>
+          <h2 style={{ color: '#ff3366', margin: '10px 0 5px', fontSize: '20px' }}>Love Date Receipt</h2>
+          <p style={{ color: '#999', fontSize: '11px', margin: 0 }}>{new Date(receiptData?.date).toLocaleString()}</p>
         </div>
         
-        <div className="receipt-body">
-          <div className="receipt-section">
-            <p><strong>💕 For:</strong> {receiptData?.playerName}</p>
-            <p><strong>🎮 Game Mode:</strong> {receiptData?.difficulty?.toUpperCase()}</p>
-            <p><strong>⏱️ Completion Time:</strong> {formatTime(receiptData?.time)}</p>
+        <div style={{ margin: '20px 0' }}>
+          <div>
+            <p style={{ margin: '8px 0', fontSize: '13px', color: '#333' }}><strong>💕 For:</strong> {receiptData?.playerName}</p>
+            <p style={{ margin: '8px 0', fontSize: '13px', color: '#333' }}><strong>🎮 Game Mode:</strong> {receiptData?.difficulty?.toUpperCase()}</p>
+            <p style={{ margin: '8px 0', fontSize: '13px', color: '#333' }}><strong>⏱️ Completion Time:</strong> {formatTime(receiptData?.time)}</p>
           </div>
           
-          <div className="receipt-divider">━━━━━━━━━━━━━━━━</div>
+          <div style={{ textAlign: 'center', color: '#ccc', margin: '15px 0', fontSize: '12px' }}>━━━━━━━━━━━━━━━━</div>
           
-          <div className="receipt-reward">
-            <p><strong>🎁 Your Reward:</strong></p>
-            <div className="reward-box">
-              <span className="reward-emoji-large">
+          <div style={{ textAlign: 'center', margin: '15px 0' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#333' }}><strong>🎁 Your Reward:</strong></p>
+            <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+              <span style={{ fontSize: '40px' }}>
                 {receiptData?.type === 'junkfood' && '🍟'}
                 {receiptData?.type === 'drinks' && '🥤'}
                 {receiptData?.type === 'sweets' && '🍰'}
                 {receiptData?.type === 'fastfood' && '🍔'}
               </span>
-              <span className="reward-text">{receiptData?.selection}</span>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff3366' }}>{receiptData?.selection}</span>
             </div>
           </div>
           
-          <div className="receipt-divider">━━━━━━━━━━━━━━━━</div>
+          <div style={{ textAlign: 'center', color: '#ccc', margin: '15px 0', fontSize: '12px' }}>━━━━━━━━━━━━━━━━</div>
           
-          <div className="receipt-message">
-            <p>✨ You deserve this treat! ✨</p>
-            <p>💖 Love, Brian 💖</p>
+          <div style={{ textAlign: 'center', margin: '15px 0' }}>
+            <p style={{ margin: '5px 0', fontStyle: 'italic', color: '#666' }}>✨ Your reward request has been sent to admin for approval! ✨</p>
+            <p style={{ margin: '5px 0', fontStyle: 'italic', color: '#666' }}>☁️ Data saved to cloud ☁️</p>
+            <p style={{ margin: '5px 0', fontStyle: 'italic', color: '#666' }}>💖 Love, Brian 💖</p>
           </div>
         </div>
         
-        <div className="receipt-footer">
-          <button className="print-btn" onClick={printReceipt}>
-            🖨️ Print Receipt
-          </button>
-          <button className="close-receipt-btn" onClick={() => setShowReceipt(false)}>
-            Close
-          </button>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <button onClick={printReceipt} style={{
+            flex: 1,
+            padding: '10px',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            background: 'linear-gradient(135deg, #4caf50, #45a049)',
+            color: 'white',
+          }}>🖨️ Print Receipt</button>
+          <button onClick={() => setShowReceipt(false)} style={{
+            flex: 1,
+            padding: '10px',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            background: '#f0f0f0',
+            color: '#666',
+          }}>Close</button>
         </div>
       </div>
     </div>
   );
 
-  // Victory Modal with reward info
+  // Victory Modal
   const VictoryModal = () => {
-    const pointsEarned = { easy: 100, medium: 200, hard: 300, expert: 500 }[difficulty];
-    const bonusPoints = (mistakes === 0 ? 100 : 0) + (timer < 300 ? 50 : 0);
     const beatBrian = timer < brianRecords[difficulty].time;
     const earnedReward = (difficulty === 'easy' && timer <= 240) ||
                          (difficulty === 'medium' && timer <= 480) ||
@@ -1050,33 +1372,76 @@ function Sudoku({ onBack, currentPlayer }) {
                          difficulty === 'expert';
     
     return (
-      <div className="victory-overlay" onClick={() => setShowVictory(false)}>
-        <div className="victory-card" onClick={(e) => e.stopPropagation()}>
-          <div className="victory-icon">🎉</div>
-          <h2>Congratulations, {playerStats.name}! 💕</h2>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(0, 0, 0, 0.95)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }} onClick={() => setShowVictory(false)}>
+        <div style={{
+          background: 'linear-gradient(135deg, #fff, #ffe4ea)',
+          borderRadius: '25px',
+          padding: '25px',
+          textAlign: 'center',
+          width: '100%',
+          maxWidth: '300px',
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: '60px' }}>🎉</div>
+          <h2 style={{ color: '#ff3366', fontSize: '22px', margin: '10px 0' }}>Congratulations, {playerStats.name}! 💕</h2>
           <p>You solved the puzzle!</p>
           
-          <div className="victory-stats">
+          <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '15px', margin: '15px 0', fontSize: '14px' }}>
             <div>⏱️ {formatTime(timer)}</div>
             <div>❌ {mistakes}/{maxMistakes}</div>
             <div>🎯 {difficulty}</div>
             
             {beatBrian && (
-              <div className="beat-brian-alert">
+              <div style={{ background: 'linear-gradient(135deg, #ffd700, #ffb347)', padding: '8px', borderRadius: '10px', fontWeight: 'bold', marginTop: '8px', color: 'white' }}>
                 🎉 Beat Brian's record! +200 🎉
               </div>
             )}
             
             {earnedReward && (
-              <div className="reward-alert">
+              <div style={{ background: 'linear-gradient(135deg, #4caf50, #45a049)', padding: '8px', borderRadius: '10px', fontWeight: 'bold', marginTop: '10px', color: 'white' }}>
                 🎁 You earned a special reward! 🎁
+              </div>
+            )}
+            
+            {playerRank && playerRank.rank && (
+              <div style={{ background: 'linear-gradient(135deg, #ffd700, #ffb347)', padding: '8px', borderRadius: '10px', fontWeight: 'bold', marginTop: '10px', color: '#333' }}>
+                🌍 Global Rank #{playerRank.rank} for {difficulty}!
               </div>
             )}
           </div>
           
-          <div className="victory-buttons">
-            <button className="victory-btn" onClick={newGameHandler}>New Game</button>
-            <button className="victory-btn secondary" onClick={() => setShowVictory(false)}>Close</button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={newGameHandler} style={{
+              flex: 1,
+              padding: '12px',
+              border: 'none',
+              borderRadius: '25px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg, #ff6b9d, #ff3366)',
+              color: 'white',
+            }}>New Game</button>
+            <button onClick={() => setShowVictory(false)} style={{
+              flex: 1,
+              padding: '12px',
+              border: 'none',
+              borderRadius: '25px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              background: '#f0f0f0',
+              color: '#666',
+            }}>Close</button>
           </div>
         </div>
       </div>
@@ -1084,20 +1449,196 @@ function Sudoku({ onBack, currentPlayer }) {
   };
 
   const GameOverModal = () => (
-    <div className="victory-overlay" onClick={() => setGameStatus('playing')}>
-      <div className="victory-card gameover-card" onClick={(e) => e.stopPropagation()}>
-        <div className="victory-icon">💀</div>
-        <h2>Game Over!</h2>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.95)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }} onClick={() => setGameStatus('playing')}>
+      <div style={{
+        background: 'linear-gradient(135deg, #fff, #ffe0e0)',
+        borderRadius: '25px',
+        padding: '25px',
+        textAlign: 'center',
+        width: '100%',
+        maxWidth: '300px',
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ fontSize: '60px' }}>💀</div>
+        <h2 style={{ color: '#ff3366', fontSize: '22px', margin: '10px 0' }}>Game Over!</h2>
         <p>{maxMistakes} mistakes made</p>
-        <div className="victory-stats">
+        <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '15px', margin: '15px 0', fontSize: '14px' }}>
           <div>⏱️ {formatTime(timer)}</div>
           <div>🎯 {difficulty}</div>
           <div>🔥 Streak ended at {streak}</div>
         </div>
-        <div className="victory-buttons">
-          <button className="victory-btn" onClick={newGameHandler}>Try Again</button>
-          <button className="victory-btn secondary" onClick={resetGameHandler}>Reset</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={newGameHandler} style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '25px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            background: 'linear-gradient(135deg, #ff6b9d, #ff3366)',
+            color: 'white',
+          }}>Try Again</button>
+          <button onClick={resetGameHandler} style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '25px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            background: '#f0f0f0',
+            color: '#666',
+          }}>Reset</button>
         </div>
+      </div>
+    </div>
+  );
+
+  // Reward Popup Component
+  const RewardPopup = () => (
+    <div style={{
+      position: 'fixed',
+      top: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 10001,
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #ffd700, #ffb347)',
+        borderRadius: '15px',
+        padding: '15px 25px',
+        textAlign: 'center',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{ fontSize: '40px' }}>{currentReward?.icon}</div>
+        <h3 style={{ color: 'white', margin: '8px 0', fontSize: '16px' }}>Challenge Complete!</h3>
+        <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>{currentReward?.name}</p>
+        <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '18px', marginTop: '5px' }}>+{currentReward?.points} pts</p>
+      </div>
+    </div>
+  );
+
+  // Leaderboard Modal
+  const LeaderboardModal = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.95)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }} onClick={handleLeaderboardClose}>
+      <div style={{
+        background: 'white',
+        borderRadius: '25px',
+        padding: '20px',
+        width: '100%',
+        maxWidth: '400px',
+        maxHeight: '80vh',
+        overflowY: 'auto',
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #ff6b9d' }}>
+          <h2 style={{ color: '#ff3366', fontSize: '20px', margin: 0 }}>🏆 My Stats ☁️</h2>
+          <button onClick={handleLeaderboardClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666' }}>✕</button>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+          <div style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', display: 'block', marginBottom: '5px' }}>👤</div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)' }}>Player</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'white' }}>{playerStats.name}</div>
+          </div>
+          <div style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', display: 'block', marginBottom: '5px' }}>🏆</div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)' }}>Wins</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'white' }}>{playerStats.wins}</div>
+          </div>
+          <div style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', display: 'block', marginBottom: '5px' }}>⭐</div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)' }}>Points</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'white' }}>{playerStats.totalPoints}</div>
+          </div>
+        </div>
+
+        {playerBest && (
+          <div style={{ background: 'rgba(0,0,0,0.05)', borderRadius: '15px', padding: '15px', margin: '15px 0' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#ff3366' }}>🏅 Personal Bests</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'white', borderRadius: '10px', fontSize: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#666' }}>🌟 Easy</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#ff3366' }}>{playerBest.easy ? formatTime(playerBest.easy.time) : '--:--'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'white', borderRadius: '10px', fontSize: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#666' }}>⭐ Medium</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#ff3366' }}>{playerBest.medium ? formatTime(playerBest.medium.time) : '--:--'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'white', borderRadius: '10px', fontSize: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#666' }}>💪 Hard</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#ff3366' }}>{playerBest.hard ? formatTime(playerBest.hard.time) : '--:--'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', background: 'white', borderRadius: '10px', fontSize: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#666' }}>👑 Expert</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#ff3366' }}>{playerBest.expert ? formatTime(playerBest.expert.time) : '--:--'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
+          {['easy', 'medium', 'hard', 'expert'].map(diff => (
+            <div key={diff} style={{ background: '#f5f5f5', borderRadius: '12px', padding: '10px' }}>
+              <div style={{ fontWeight: 'bold', color: '#ff3366', marginBottom: '8px', fontSize: '14px' }}>{diff.charAt(0).toUpperCase() + diff.slice(1)}</div>
+              <div style={{ fontSize: '10px', color: '#999', marginBottom: '8px' }}>🌍 Global Rankings</div>
+              <div style={{ background: '#fff9c4', margin: '4px -5px', padding: '6px 5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
+                <div style={{ width: '25px', fontWeight: 'bold', color: '#ff9800' }}>👑</div>
+                <div style={{ flex: 1 }}>Brian (Record)</div>
+                <div style={{ fontFamily: 'monospace' }}>{formatTime(brianRecords[diff].time)}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', fontSize: '12px' }}>
+                <div style={{ width: '25px', fontWeight: 'bold', color: '#ff9800' }}>🎯</div>
+                <div style={{ flex: 1 }}>Beat: {formatTime(brianRecords[diff].time - 10)}</div>
+                <div style={{ fontFamily: 'monospace' }}>+200 pts</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div style={{ background: 'linear-gradient(135deg, #fff9c4, #ffe082)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold', fontSize: '14px', color: '#e65100' }}>
+            <span>⭐</span>
+            <span>Beat Brian: {formatTime(brianRecords[difficulty].time)}</span>
+            <span>☁️</span>
+          </div>
+        </div>
+
+        <button onClick={() => { setShowLeaderboard(false); setShowGlobalLeaderboard(true); }} style={{
+          width: '100%',
+          marginTop: '15px',
+          padding: '12px',
+          background: 'linear-gradient(135deg, #2196f3, #1976d2)',
+          border: 'none',
+          borderRadius: '25px',
+          color: 'white',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+        }}>
+          🌍 View Global Leaderboard
+        </button>
       </div>
     </div>
   );
@@ -1107,7 +1648,7 @@ function Sudoku({ onBack, currentPlayer }) {
       <div className="sudoku-container">
         <div className="sudoku-header">
           <button className="back-button" onClick={onBack}>←</button>
-          <h1 className="sudoku-title">Sudoku</h1>
+          <h1 className="sudoku-title">Sudoku ☁️</h1>
           <div className="sudoku-stats">
             <div className="stat">⭐{totalPoints}</div>
             <div className="stat">🔥{streak}</div>
@@ -1125,8 +1666,12 @@ function Sudoku({ onBack, currentPlayer }) {
     <div className="sudoku-container">
       <div className="sudoku-header">
         <button className="back-button" onClick={onBack}>←</button>
-        <h1 className="sudoku-title">Sudoku 💕</h1>
-        <button className="menu-button" onClick={handleMenuClick}>
+        <h1 className="sudoku-title">Sudoku 💕☁️</h1>
+        <button 
+          className="menu-button" 
+          onClick={openMenu}
+          aria-label="Menu"
+        >
           ☰
         </button>
       </div>
@@ -1152,7 +1697,35 @@ function Sudoku({ onBack, currentPlayer }) {
           <span>💡</span>
           <span>{hintsLeft}</span>
         </div>
+        <div className="stat-mobile">
+          <span>☁️</span>
+          <span>Cloud</span>
+        </div>
       </div>
+
+      {/* Global Stats Bar */}
+      {globalStats && (
+        <div className="global-stats-bar">
+          <div className="global-stat">
+            <span>🌍</span>
+            <span>{globalStats.totalPlayers} Players</span>
+          </div>
+          <div className="global-stat">
+            <span>🎮</span>
+            <span>{globalStats.totalGames} Games</span>
+          </div>
+          <div className="global-stat">
+            <span>🏆</span>
+            <span>World: {globalStats.records[difficulty]?.time ? formatTime(globalStats.records[difficulty].time) : '--:--'}</span>
+          </div>
+          {playerRank && playerRank.rank && (
+            <div className="global-stat rank-stat">
+              <span>📊</span>
+              <span>Rank #{playerRank.rank}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="difficulty-row">
         {['easy', 'medium', 'hard', 'expert'].map(level => (
@@ -1230,125 +1803,63 @@ function Sudoku({ onBack, currentPlayer }) {
         </button>
       </div>
 
+      {/* Action Row with Hint Button */}
       <div className="action-row">
         <button className="action-chip" onClick={getHint} disabled={hintsLeft === 0}>
           💡 {hintsLeft}
         </button>
-        <button className="action-chip" onClick={handleLeaderboardClick}>
-          🏆
-        </button>
-        <button className="action-chip" onClick={newGameHandler}>
-          🎮
-        </button>
       </div>
-
+      
+      {/* Modals */}
+      <SimpleMenu />
       {showVictory && gameStatus === 'won' && <VictoryModal />}
       {gameStatus === 'lost' && <GameOverModal />}
       {showRewards && currentReward && <RewardPopup />}
       {showLeaderboard && <LeaderboardModal />}
-      {showMobileMenu && <MobileMenu />}
       {showRewardSelection && <RewardSelectionModal />}
       {showReceipt && <ReceiptModal />}
+      <NotificationPanel />
+      {showGlobalLeaderboard && (
+        <GlobalLeaderboard onClose={() => setShowGlobalLeaderboard(false)} />
+      )}
+      {pendingRewardStatus === 'pending' && (
+        <div className="pending-reward-popup">
+          <div className="pending-reward-content">
+            <span>⏳</span>
+            <p>Reward sent for admin approval! ☁️</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Sync Notifications */}
+      {showSyncNotification && (
+        <div className="sync-notification">
+          <div className="sync-content cloud">
+            <span>☁️</span>
+            <p>Cloud data loaded! Your progress is synced across devices.</p>
+          </div>
+        </div>
+      )}
+      
+      {showSyncSuccess && (
+        <div className="sync-notification">
+          <div className="sync-content success">
+            <span>✅</span>
+            <p>Successfully synced to cloud! ☁️</p>
+          </div>
+        </div>
+      )}
+      
+      {showSyncError && (
+        <div className="sync-notification">
+          <div className="sync-content error">
+            <span>❌</span>
+            <p>Sync failed. Check your connection.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-// Helper Components
-const RewardPopup = ({ currentReward }) => (
-  <div className="reward-popup">
-    <div className="reward-content">
-      <div className="reward-icon">{currentReward?.icon}</div>
-      <h3>Challenge Complete!</h3>
-      <p className="reward-name">{currentReward?.name}</p>
-      <p className="reward-points">+{currentReward?.points} pts</p>
-    </div>
-  </div>
-);
-
-const LeaderboardModal = ({ leaderboard, playerStats, difficulty, formatTime, brianRecords, closeLeaderboard }) => (
-  <div className="leaderboard-overlay" onClick={closeLeaderboard}>
-    <div className="leaderboard-card" onClick={(e) => e.stopPropagation()}>
-      <div className="leaderboard-header">
-        <h2>🏆 Champions 🏆</h2>
-        <button className="close-leaderboard" onClick={closeLeaderboard}>✕</button>
-      </div>
-      
-      <div className="player-stats-summary">
-        <div className="stat-card">
-          <div className="stat-icon">👤</div>
-          <div className="stat-info">
-            <div className="stat-label">Player</div>
-            <div className="stat-value">{playerStats.name}</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🏆</div>
-          <div className="stat-info">
-            <div className="stat-label">Wins</div>
-            <div className="stat-value">{playerStats.wins}</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">⭐</div>
-          <div className="stat-info">
-            <div className="stat-label">Points</div>
-            <div className="stat-value">{playerStats.totalPoints}</div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="difficulty-selector-compact">
-        {['easy', 'medium', 'hard', 'expert'].map(diff => (
-          <div key={diff} className="compact-difficulty">
-            <div className="compact-title">{diff.charAt(0).toUpperCase() + diff.slice(1)}</div>
-            {leaderboard.filter(entry => entry.difficulty === diff).slice(0, 3).map((entry, idx) => (
-              <div key={entry.id} className={`compact-entry ${entry.isBrian ? 'brian-entry' : ''}`}>
-                <div className="compact-rank">{idx + 1}</div>
-                <div className="compact-name">{entry.name}</div>
-                <div className="compact-time">{formatTime(entry.time)}</div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-      
-      <div className="brian-info">
-        <div className="brian-badge">
-          <span>⭐</span>
-          <span>Beat Brian: {formatTime(brianRecords[difficulty].time)}</span>
-          <span>🎯</span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const MobileMenu = ({ newGameHandler, resetGameHandler, handleLeaderboardClick, refreshChallengesHandler, backHandler, closeMenu }) => (
-  <div className="mobile-menu-overlay" onClick={closeMenu}>
-    <div className="mobile-menu-content" onClick={(e) => e.stopPropagation()}>
-      <div className="mobile-menu-header">
-        <h3>Menu</h3>
-        <button className="close-menu" onClick={closeMenu}>✕</button>
-      </div>
-      <div className="mobile-menu-items">
-        <button className="mobile-menu-item" onClick={newGameHandler}>
-          <span>🎮</span> New Game
-        </button>
-        <button className="mobile-menu-item" onClick={resetGameHandler}>
-          <span>🔄</span> Reset Game
-        </button>
-        <button className="mobile-menu-item" onClick={handleLeaderboardClick}>
-          <span>🏆</span> Leaderboard
-        </button>
-        <button className="mobile-menu-item" onClick={refreshChallengesHandler}>
-          <span>🎯</span> Refresh Challenges
-        </button>
-        <button className="mobile-menu-item" onClick={backHandler}>
-          <span>←</span> Back to Love Letter
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
 export default Sudoku;
