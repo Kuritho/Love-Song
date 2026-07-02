@@ -1,0 +1,555 @@
+.enhanced-song-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.visualizer-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 20px;
+  pointer-events: none;
+}
+
+.visualizer-bar {
+  width: 20px;
+  background: linear-gradient(to top, #ff6b6b, #ff8e8e);
+  border-radius: 10px 10px 0 0;
+  animation: visualizerPulse 0.5s ease infinite alternate;
+  opacity: 0.7;
+  transition: height 0.3s ease;
+}
+
+@keyframes visualizerPulse {
+  from { 
+    opacity: 0.3;
+    transform: scaleY(0.8);
+  }
+  to { 
+    opacity: 0.8;
+    transform: scaleY(1);
+  }
+}
+
+.enhanced-song-content {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  backdrop-filter: blur(10px);
+}
+
+.back-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: auto;
+  min-height: 44px; /* Better touch target */
+}
+
+.back-btn:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.song-header h1 {
+  color: #ff6b6b;
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  background: linear-gradient(45deg, #ff6b6b, #ff8e8e, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+.song-subtitle {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 30px;
+  font-size: 1.1em;
+}
+
+.song-info {
+  margin: 20px 0;
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 15px;
+  color: white;
+}
+
+.song-title-main {
+  font-size: 1.8em;
+  margin: 0 0 5px 0;
+  background: linear-gradient(45deg, #fff, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.song-artist-main {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.music-player {
+  margin: 30px 0;
+}
+
+.album-art-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 30px;
+}
+
+.rotating-album {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.rotating-album.playing {
+  animation: rotateAlbum 10s linear infinite;
+}
+
+.album-cover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  padding: 10px;
+  font-size: 0.9em;
+}
+
+.heart-icon {
+  font-size: 1.5em;
+  margin-top: 5px;
+}
+
+.vinyl-disc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(45deg, #2c3e50, #34495e);
+  border-radius: 50%;
+  border: 8px solid #1a1a2e;
+}
+
+.vinyl-disc::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  border: 4px solid white;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.rotating-album.playing .vinyl-disc {
+  animation: rotateVinyl 4s linear infinite;
+}
+
+@keyframes rotateAlbum {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rotateVinyl {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.player-controls {
+  margin-top: 30px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+  border-radius: 4px;
+  transition: width 0.1s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  border: 3px solid #ff6b6b;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.time-display {
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.control-btn, .play-pause-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  min-height: 44px; /* Better touch target */
+}
+
+.play-pause-btn {
+  width: 70px;
+  height: 70px;
+  font-size: 1.8em;
+}
+
+.control-btn:hover, .play-pause-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:active, .play-pause-btn:active {
+  transform: scale(0.95);
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.volume-slider {
+  width: 100px;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.volume-percent {
+  color: #666;
+  font-size: 0.9em;
+  font-weight: bold;
+  min-width: 40px;
+}
+
+.song-dedication {
+  margin-top: 30px;
+}
+
+.dedication-card {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  color: white;
+  padding: 25px;
+  border-radius: 15px;
+  text-align: left;
+  box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+}
+
+.dedication-card h3 {
+  margin-bottom: 15px;
+  font-size: 1.4em;
+  text-align: center;
+}
+
+.dedication-card p {
+  line-height: 1.6;
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.composer-note {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.error-message {
+  background: #ff6b6b;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 15px 0;
+  text-align: left;
+}
+
+.error-help {
+  font-size: 0.9em;
+  margin: 10px 0 0 0;
+  opacity: 0.9;
+}
+
+.loading-message {
+  background: #4ecdc4;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 15px 0;
+}
+
+.mobile-note {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9em;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.control-btn:disabled,
+.play-pause-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Enhanced visualizer animation */
+.visualizer-bar {
+  transition: height 0.2s ease;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .enhanced-song-container {
+    padding: 15px;
+    align-items: flex-start;
+  }
+  
+  .enhanced-song-content {
+    padding: 30px 20px;
+    margin: 20px 0;
+  }
+  
+  .song-header h1 {
+    font-size: 2em;
+  }
+  
+  .album-art-container {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .album-cover {
+    width: 120px;
+    height: 120px;
+    font-size: 0.8em;
+  }
+  
+  .vinyl-disc {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .play-pause-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5em;
+  }
+  
+  .control-buttons {
+    gap: 10px;
+  }
+  
+  .control-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1em;
+  }
+  
+  .volume-control {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .volume-slider {
+    width: 80px;
+  }
+  
+  .song-title-main {
+    font-size: 1.5em;
+  }
+  
+  .dedication-card {
+    padding: 20px;
+  }
+  
+  .dedication-card h3 {
+    font-size: 1.2em;
+  }
+  
+  .dedication-card p {
+    font-size: 1em;
+  }
+}
+
+@media (max-width: 480px) {
+  .enhanced-song-content {
+    padding: 25px 15px;
+  }
+  
+  .song-header h1 {
+    font-size: 1.8em;
+  }
+  
+  .album-art-container {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .album-cover {
+    width: 100px;
+    height: 100px;
+    font-size: 0.7em;
+  }
+  
+  .vinyl-disc {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .control-buttons {
+    gap: 8px;
+  }
+  
+  .play-pause-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 1.3em;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1em;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) {
+  .control-btn:hover, 
+  .play-pause-btn:hover,
+  .back-btn:hover {
+    transform: none;
+  }
+  
+  .control-btn:active, 
+  .play-pause-btn:active,
+  .back-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .enhanced-song-content {
+    background: white;
+    border: 2px solid #000;
+  }
+  
+  .visualizer-bar {
+    background: #000;
+  }
+}
