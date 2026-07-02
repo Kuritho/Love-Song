@@ -16,7 +16,8 @@ import {
   setDoc,
   getDoc,
   enableIndexedDbPersistence,
-  deleteDoc
+  deleteDoc,
+  Timestamp
 } from 'firebase/firestore';
 
 // Your Firebase configuration
@@ -865,6 +866,26 @@ export const deleteUser = async (userId) => {
     console.error('Error deleting user:', error);
     return { success: false, error: error.message };
   }
+};
+
+// ==================== EXPORT FIREBASE FUNCTIONS ====================
+// Export all Firebase functions for use in other components
+export {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  doc,
+  orderBy,
+  limit,
+  serverTimestamp,
+  onSnapshot,
+  setDoc,
+  getDoc,
+  deleteDoc,
+  Timestamp
 };
 
 // Export database instance

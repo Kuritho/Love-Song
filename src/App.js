@@ -9,6 +9,20 @@ import Pacman from './Pacman';
 import FirebaseLoginPage from './FirebaseLoginPage';
 import FirebaseAdminPanel from './FirebaseAdminPanel';
 import { AuthProvider, useAuth } from './FirebaseAuthContext';
+import { 
+  db,
+  addDoc, 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot,
+  serverTimestamp,
+  getDocs,
+  doc,
+  deleteDoc,
+  updateDoc
+} from './firebase';
 
 // My Profile Component
 function MyProfile({ onBack, user }) {
@@ -163,6 +177,245 @@ function MyProfile({ onBack, user }) {
   );
 }
 
+// Comments Component
+function CommentsSection({ month, user }) {
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const COMMENTS_COLLECTION = 'month_comments';
+
+  useEffect(() => {
+    if (!month) return;
+
+    const q = query(
+      collection(db, COMMENTS_COLLECTION),
+      where('month', '==', month),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const commentList = [];
+      snapshot.forEach((doc) => {
+        commentList.push({ id: doc.id, ...doc.data() });
+      });
+      setComments(commentList);
+      setIsLoading(false);
+    }, (error) => {
+      console.error('Error fetching comments:', error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [month]);
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || !user) return;
+
+    try {
+      await addDoc(collection(db, COMMENTS_COLLECTION), {
+        month: month,
+        username: user.username || user.email?.split('@')[0] || 'Anonymous',
+        userId: user.uid || user.email || 'anonymous',
+        comment: newComment.trim(),
+        createdAt: serverTimestamp(),
+        likes: 0,
+        likedBy: []
+      });
+      setNewComment('');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      alert('Failed to add comment. Please try again.');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    
+    try {
+      await deleteDoc(doc(db, COMMENTS_COLLECTION, commentId));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment.');
+    }
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!editText.trim()) return;
+
+    try {
+      const commentRef = doc(db, COMMENTS_COLLECTION, commentId);
+      await updateDoc(commentRef, {
+        comment: editText.trim(),
+        editedAt: serverTimestamp(),
+        isEdited: true
+      });
+      setEditingCommentId(null);
+      setEditText('');
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      alert('Failed to edit comment.');
+    }
+  };
+
+  const handleLikeComment = async (commentId, currentLikes, likedBy) => {
+    try {
+      const commentRef = doc(db, COMMENTS_COLLECTION, commentId);
+      const userIdentifier = user?.uid || user?.email || 'anonymous';
+      
+      if (likedBy && likedBy.includes(userIdentifier)) {
+        // Unlike
+        await updateDoc(commentRef, {
+          likes: currentLikes - 1,
+          likedBy: likedBy.filter(id => id !== userIdentifier)
+        });
+      } else {
+        // Like
+        await updateDoc(commentRef, {
+          likes: currentLikes + 1,
+          likedBy: [...(likedBy || []), userIdentifier]
+        });
+      }
+    } catch (error) {
+      console.error('Error liking comment:', error);
+    }
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Just now';
+    }
+  };
+
+  return (
+    <div className="comments-section">
+      <div className="comments-header">
+        <h3>💬 Comments & Messages</h3>
+        <span className="comment-count">{comments.length} messages</span>
+      </div>
+
+      {user ? (
+        <form className="comment-form" onSubmit={handleAddComment}>
+          <div className="comment-input-wrapper">
+            <span className="comment-avatar">{user.username?.[0] || '💕'}</span>
+            <input
+              type="text"
+              placeholder="Write a message or comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              maxLength={500}
+              className="comment-input"
+            />
+            <button type="submit" className="comment-submit-btn" disabled={!newComment.trim()}>
+              💌 Send
+            </button>
+          </div>
+          <div className="comment-char-count">{newComment.length}/500</div>
+        </form>
+      ) : (
+        <div className="comment-login-prompt">
+          <p>Please log in to leave a message 💕</p>
+        </div>
+      )}
+
+      <div className="comments-list">
+        {isLoading ? (
+          <div className="comments-loading">
+            <span className="loading-spinner">💕</span>
+            <p>Loading messages...</p>
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="no-comments">
+            <p>💝 No messages yet. Be the first to leave a message!</p>
+          </div>
+        ) : (
+          comments.map((comment) => (
+            <div key={comment.id} className="comment-item">
+              <div className="comment-avatar-wrapper">
+                <span className="comment-avatar-small">
+                  {comment.username?.[0] || '💕'}
+                </span>
+              </div>
+              <div className="comment-content">
+                <div className="comment-header">
+                  <span className="comment-username">{comment.username}</span>
+                  <span className="comment-date">{formatDate(comment.createdAt)}</span>
+                  {comment.isEdited && <span className="comment-edited">(edited)</span>}
+                </div>
+                
+                {editingCommentId === comment.id ? (
+                  <div className="comment-edit-form">
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      maxLength={500}
+                      className="comment-edit-input"
+                      autoFocus
+                    />
+                    <div className="comment-edit-actions">
+                      <button onClick={() => handleEditComment(comment.id)} className="save-edit-btn">
+                        Save
+                      </button>
+                      <button onClick={() => setEditingCommentId(null)} className="cancel-edit-btn">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="comment-text">{comment.comment}</p>
+                )}
+
+                <div className="comment-actions">
+                  <button 
+                    className={`like-btn ${comment.likedBy?.includes(user?.uid || user?.email || 'anonymous') ? 'liked' : ''}`}
+                    onClick={() => handleLikeComment(comment.id, comment.likes || 0, comment.likedBy || [])}
+                  >
+                    {comment.likedBy?.includes(user?.uid || user?.email || 'anonymous') ? '❤️' : '🤍'}
+                    <span>{comment.likes || 0}</span>
+                  </button>
+                  
+                  {(user?.username === comment.username || user?.email === comment.userId || user?.uid === comment.userId) && (
+                    <>
+                      <button 
+                        className="edit-btn"
+                        onClick={() => {
+                          setEditingCommentId(comment.id);
+                          setEditText(comment.comment);
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDeleteComment(comment.id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Main App Content Component
 function AppContent({ onAppLogout }) {
   const { user, logout, isAdmin } = useAuth();
@@ -170,7 +423,6 @@ function AppContent({ onAppLogout }) {
   const [showHearts, setShowHearts] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(8);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
-  const [hoveredButton, setHoveredButton] = useState(null);
   const [showGame, setShowGame] = useState(false);
   const [showSudoku, setShowSudoku] = useState(false);
   const [showPacman, setShowPacman] = useState(false);
@@ -292,12 +544,16 @@ function AppContent({ onAppLogout }) {
       letter: {
         greeting: "My Precious Jasmine 💎💕",
         paragraphs: [
-          "Happy 8th Monthsary, sweetheart! 💚",
-          "Grabe, 8 months na diay ta. Thank you so much for choosing to stay with me and for being the best girlfriend I could ever ask for. Thank you sa imong love, pasensya, understanding, ug sa tanan nimo nga efforts bisan usahay dili ko perfect. You make my days brighter, and I'm really grateful nga naa ka sa akong life.",
-          "I'm so proud of you, especially karon nga 3rd week na nimo sa OJT. I know dili sayon ang imong giagian, but I also know kaya kaayo na nimo. Keep doing your best, learn as much as you can, and always believe in yourself. Good luck, love! I'm always here cheering for you every step of the way.",
-          "Usa pud sa akong gihangyo kay unta, bisan daghan kag ma-meet nga new people during your OJT, ako lang gihapon ang lalaki nga imong pilion every day. I hope dili ka ma-fall o mo-entertain ug lain, just like how I'll continue choosing you. Salig ko sa imo, and I pray nga our love stays strong despite everything.",
-          "Thank you again for loving me. I'm looking forward to more months and years with you, more memories, more laughter, and more dreams that we'll achieve together.",
-          "I love you so much, always and forever. Happy 8th Monthsary, my sweetheart. ❤️💚"
+          "Happy 8th Monthsary, my love! 💚 Another month has passed, and I still find myself falling in love with you more and more each day. It's amazing how time flies when you're with the right person, and you, sweetheart, are definitely the right person for me.",
+          "These past eight months have been filled with so many beautiful moments, unforgettable memories, and lessons that have made our relationship stronger. We've laughed together, cried together, and grown together in ways I never imagined possible. Through every challenge and every triumph, you've been my constant source of strength and inspiration.",
+          "I want you to know how grateful I am for your patience, your understanding, and your unconditional love. You've shown me what it truly means to be loved and to love someone wholeheartedly. Your presence in my life has brought so much joy, purpose, and meaning. You make even the simplest moments feel extraordinary.",
+          "As we celebrate our 8th month together, I want to remind you of something important: my love for you isn't just a feeling—it's a choice I make every single day. I choose you, your quirks, your flaws, your beautiful heart, and everything that makes you who you are. And I will continue to choose you, not just for months, but for years and for a lifetime.",
+          "Thank you for being my safe space, my confidant, my best friend, and my greatest love. Thank you for always believing in us, even when things got tough. Thank you for staying, for fighting, and for never giving up on what we have.",
+          "I know there will be more challenges ahead, but I'm not afraid because I know we'll face them together. With you by my side, I feel like I can conquer anything. Our love is not just about the happy moments—it's about the commitment to stay, to understand, and to grow together through every season of life.",
+          "I want to make more memories with you, travel to new places, try new things, and build a future that we can both be proud of. And someday, when we look back at these months we've shared, I hope you'll smile knowing that every single moment was worth it.",
+          "As I've said before, I'm not perfect, and I'll never claim to be. But I promise you this: I will always strive to be the best version of myself for you and for us. I'll continue to learn, to improve, and to love you in the way you deserve to be loved.",
+          "You are not just my girlfriend—you are my partner, my cheerleader, my peace, and my home. I am so incredibly lucky to have you in my life, and I never want to take that for granted.",
+          "Happy 8th Monthsary, my beautiful Jasmine. Here's to many more months, years, and decades of love, laughter, and happiness together. I love you more than words could ever express. ❤️🥰💚"
         ],
         specialNote: "💎 Eight months of precious love, and I'm looking forward to a lifetime more. You are my greatest treasure. 💎"
       }
@@ -589,6 +845,9 @@ function AppContent({ onAppLogout }) {
               </div>
             </div>
           </div>
+
+          {/* Comments Section */}
+          <CommentsSection month={selectedMonth} user={user} />
 
           {/* Navigation Footer */}
           <div className="nav-footer">
